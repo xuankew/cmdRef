@@ -40,13 +40,28 @@ irm https://raw.githubusercontent.com/xuankew/cmdRef/main/install.ps1 | iex
 cargo install --git https://github.com/xuankew/cmdRef
 ```
 
+## Updating
+
+```bash
+cmdref update       # Self-update to latest version
+```
+
+Or reinstall via your package manager:
+
+```bash
+brew upgrade cmdref                                    # Homebrew
+curl -fsSL https://raw.githubusercontent.com/xuankew/cmdRef/main/install.sh | bash  # macOS/Linux
+irm https://raw.githubusercontent.com/xuankew/cmdRef/main/install.ps1 | iex         # Windows
+```
+
 ## Usage
 
 ```bash
-cmdref              # Launch interactive TUI
+cmdref                # Launch interactive TUI
 cmdref --search tail  # Launch with search pre-filled
-cmdref --help       # Show help
-cmdref --version    # Show version
+cmdref update         # Check and install updates
+cmdref --help         # Show help
+cmdref --version      # Show version
 ```
 
 ### Keyboard Shortcuts

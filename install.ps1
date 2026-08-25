@@ -18,8 +18,8 @@ function Get-InstallDir {
 function Get-Platform {
     $arch = [System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture
     switch ($arch) {
-        "X64"   { return "windows-x86_64" }
-        "Arm64" { return "windows-aarch64" }
+        "X64"   { return "x86_64" }
+        "Arm64" { return "arm64 (via x86_64 emulation)" }
         default {
             Write-Error "Unsupported architecture: $arch"
             exit 1
@@ -47,11 +47,14 @@ function Install-CmdRef {
 
     $outFile = Join-Path $installDir $BinaryName
 
-    Write-Host "Downloading cmdref..."
+    Write-Host "Downloading from: $url"
     try {
         Invoke-WebRequest -Uri $url -OutFile $outFile -UseBasicParsing
     } catch {
         Write-Error "Failed to download: $_"
+        Write-Host ""
+        Write-Host "You can also download manually:"
+        Write-Host "  https://github.com/$Repo/releases/latest"
         exit 1
     }
 
@@ -68,8 +71,10 @@ function Install-CmdRef {
         Write-Host "Please restart your terminal for changes to take effect."
     }
 
+    Write-Host "Installed: $outFile"
     Write-Host ""
     Write-Host "Run 'cmdref' to start!" -ForegroundColor Cyan
+    Write-Host "Run 'cmdref update' to upgrade later." -ForegroundColor DarkGray
 }
 
 Install-CmdRef
