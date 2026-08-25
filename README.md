@@ -8,7 +8,13 @@ CmdRef is a terminal-based cheatsheet that helps developers and testers quickly 
 
 - **100+ commands** across Linux, macOS, Windows, and testing tools
 - **Interactive TUI** with sidebar navigation and detailed command views
-- **Fuzzy search** — type any keyword to instantly find matching commands
+- **Fuzzy search** — type any keyword to instantly find matching commands (searches names, examples, and tips)
+- **Copy to clipboard** — press `y` to copy any command's first example code
+- **Bookmarks** — press `b` to save favorite commands, `B` to jump to your bookmark list
+- **History** — press `H` to quickly revisit recently viewed commands
+- **Auto-detect platform** — automatically highlights your OS on startup
+- **Custom commands** — add your own YAML files to `~/.config/cmdref/custom/` without rebuilding
+- **Self-update** — `cmdref update` checks for new versions and upgrades in-place
 - **Cross-platform** — single binary for macOS, Linux, and Windows
 - **Zero dependencies** — all command data is embedded in the binary
 - **Easy to extend** — add commands by editing YAML files, no code changes needed
@@ -73,6 +79,10 @@ cmdref --version      # Show version
 | `Enter` | Expand platform / Select command |
 | `Tab` | Switch between sidebar and content |
 | `/` | Enter search mode |
+| `y` | Copy command example to clipboard |
+| `b` | Toggle bookmark on current command |
+| `B` | Jump to bookmarks |
+| `H` | Jump to history |
 | `Esc` | Go back / Exit search |
 | `1` - `4` | Jump to platform |
 | `q` | Quit |
@@ -100,12 +110,38 @@ command-tool/
 │   ├── app.rs              # App state machine
 │   ├── data.rs             # Data structures + YAML loading
 │   ├── search.rs           # Fuzzy search engine
+│   ├── bookmarks.rs        # Bookmark persistence
+│   ├── clipboard.rs        # Cross-platform clipboard
+│   ├── history.rs          # View history tracking
+│   ├── update.rs           # Self-update via GitHub API
 │   └── ui/                 # TUI rendering
 ├── brew/                   # Homebrew Formula + Scoop manifest
 ├── scripts/                # Release helper scripts
 ├── install.sh              # macOS/Linux install script
 └── install.ps1             # Windows install script
 ```
+
+## Custom Commands
+
+You can add your own commands without modifying the source code. Create YAML files in `~/.config/cmdref/custom/`:
+
+```yaml
+# ~/.config/cmdref/custom/docker.yaml
+category: Docker
+description: Docker container management commands
+platform: linux    # or mac, windows, or a custom name
+commands:
+  - name: docker ps
+    summary: "List running containers"
+    examples:
+      - description: "Show all containers (including stopped)"
+        code: "docker ps -a"
+    tips:
+      - "Use --format to customize output"
+    related: ["docker images", "docker logs"]
+```
+
+Custom commands are merged into the built-in data at startup. Files with `platform: mac` will appear under macOS, `platform: linux` under Linux, etc. You can also use custom platform names to create entirely new sections.
 
 ## Contributing
 

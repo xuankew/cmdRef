@@ -10,6 +10,8 @@ pub fn draw(frame: &mut Frame, app: &App, area: Rect) {
     let title = if let Some(item) = app.sidebar_items.get(app.sidebar_cursor) {
         if item.kind == SidebarItemKind::Bookmarks {
             " ★ Bookmarks ".to_string()
+        } else if item.kind == SidebarItemKind::History {
+            " 🕑 History ".to_string()
         } else {
             app.current_category()
                 .map(|c| format!(" {} ", c.name))
@@ -77,6 +79,40 @@ fn draw_command_list(frame: &mut Frame, app: &App, area: Rect) {
                     };
                     ListItem::new(Line::from(vec![
                         Span::styled(format!("  ★ {}", name), style),
+                    ]))
+                })
+                .collect();
+
+            let list = List::new(items);
+            frame.render_widget(list, area);
+            return;
+        }
+
+        // History 模式：显示浏览历史
+        if item.kind == SidebarItemKind::History {
+            let history_commands: Vec<String> = app.history.all().iter().map(|h| {
+                format!("{} > {}", h.category, h.command)
+            }).collect();
+
+            if history_commands.is_empty() {
+                let empty = Paragraph::new("  (no history yet)\n\n  Browse commands to\n  build your history")
+                    .style(Style::default().fg(Color::DarkGray));
+                frame.render_widget(empty, area);
+                return;
+            }
+
+            let items: Vec<ListItem> = history_commands
+                .iter()
+                .enumerate()
+                .map(|(i, name)| {
+                    let is_selected = i == selected;
+                    let style = if is_selected {
+                        Style::default().fg(Color::Black).bg(Color::Cyan).add_modifier(Modifier::BOLD)
+                    } else {
+                        Style::default().fg(Color::Cyan)
+                    };
+                    ListItem::new(Line::from(vec![
+                        Span::styled(format!("  🕑 {}", name), style),
                     ]))
                 })
                 .collect();

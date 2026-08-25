@@ -123,7 +123,81 @@ pub fn load_all_data() -> Vec<Platform> {
         });
     }
 
+    // 加载用户自定义命令
+    merge_custom_commands(&mut platforms);
+
     platforms
+}
+
+/// 从 ~/.config/cmdref/custom/ 加载用户自定义命令并合并到平台数据
+fn merge_custom_commands(platforms: &mut Vec<Platform>) {
+    let custom_dir = dirs::config_dir()
+        .unwrap_or_else(|| std::path::PathBuf::from("."))
+        .join("cmdref")
+        .join("custom");
+
+    if !custom_dir.is_dir() {
+        return;
+    }
+
+    let display_name_map = [
+        ("linux", "Linux"),
+        ("mac", "macOS"),
+        ("windows", "Windows"),
+        ("testing", "Testing"),
+    ];
+
+    let entries = match std::fs::read_dir(&custom_dir) {
+        Ok(e) => e,
+        Err(_) => return,
+    };
+
+    for entry in entries.flatten() {
+        let path = entry.path();
+        if path.extension().and_then(|e| e.to_str()) != Some("yaml")
+            && path.extension().and_then(|e| e.to_str()) != Some("yml")
+        {
+            continue;
+        }
+
+        let content = match std::fs::read_to_string(&path) {
+            Ok(c) => c,
+            Err(_) => continue,
+        };
+
+        let cmd_file: CommandFile = match serde_yaml::from_str(&content) {
+            Ok(f) => f,
+            Err(_) => continue,
+        };
+
+        let category = Category {
+            name: cmd_file.category.clone(),
+            description: cmd_file.description,
+            platform: cmd_file.platform.clone(),
+            commands: cmd_file.commands,
+        };
+
+        let platform_key = cmd_file.platform.to_lowercase();
+        let display = display_name_map
+            .iter()
+            .find(|(k, _)| *k == platform_key.as_str())
+            .map(|(_, v)| *v)
+            .unwrap_or_else(|| {
+                // For unknown platforms, capitalize first letter
+                Box::leak(cmd_file.platform.clone().into_boxed_str())
+            });
+
+        // Merge into existing platform or create new one
+        if let Some(platform) = platforms.iter_mut().find(|p| p.name == platform_key) {
+            platform.categories.push(category);
+        } else {
+            platforms.push(Platform {
+                name: platform_key,
+                display_name: display.to_string(),
+                categories: vec![category],
+            });
+        }
+    }
 }
 
 /// 获取所有命令的扁平列表（用于搜索）

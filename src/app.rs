@@ -1,6 +1,7 @@
 use crate::data::{Command, Category, Platform};
 use crate::search::SearchEngine;
 use crate::bookmarks::BookmarkManager;
+use crate::history::HistoryManager;
 
 /// 焦点所在的面板
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -21,6 +22,7 @@ pub enum AppMode {
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum SidebarItemKind {
     Bookmarks,
+    History,
     Platform,
     Category,
 }
@@ -39,6 +41,7 @@ pub struct App {
     pub platforms: Vec<Platform>,
     pub search_engine: SearchEngine,
     pub bookmarks: BookmarkManager,
+    pub history: HistoryManager,
 
     // 侧边栏状态
     pub sidebar_items: Vec<SidebarItem>,
@@ -87,6 +90,14 @@ impl App {
             expanded: false,
         });
 
+        // 第二项：History
+        sidebar_items.push(SidebarItem {
+            kind: SidebarItemKind::History,
+            platform_index: 0,
+            category_index: None,
+            expanded: false,
+        });
+
         // 检测当前平台
         let detected_platform = Self::detect_platform_index(&platforms);
 
@@ -113,6 +124,7 @@ impl App {
 
         let search_engine = SearchEngine::new();
         let bookmarks = BookmarkManager::new();
+        let history = HistoryManager::new();
 
         // 光标定位到当前检测到的平台
         let initial_cursor = sidebar_items
@@ -124,6 +136,7 @@ impl App {
             platforms,
             search_engine,
             bookmarks,
+            history,
             sidebar_items,
             sidebar_cursor: initial_cursor,
             content_cursor: 0,
@@ -180,7 +193,7 @@ impl App {
     fn update_selection(&mut self) {
         if let Some(item) = self.current_sidebar_item() {
             match item.kind {
-                SidebarItemKind::Bookmarks => {
+                SidebarItemKind::Bookmarks | SidebarItemKind::History => {
                     self.selected_command = Some(0);
                     self.content_cursor = 0;
                 }
@@ -198,6 +211,22 @@ impl App {
                     self.content_cursor = 0;
                 }
             }
+        }
+
+        // 记录到历史
+        self.record_current_to_history();
+    }
+
+    /// 记录当前命令到历史
+    fn record_current_to_history(&mut self) {
+        let info = {
+            let platform = self.current_platform().map(|p| p.name.clone());
+            let cat = self.current_category().map(|c| c.name.clone());
+            let cmd = self.current_command().map(|c| c.name.clone());
+            (platform, cat, cmd)
+        };
+        if let (Some(platform), Some(cat), Some(cmd)) = info {
+            self.history.record(&platform, &cat, &cmd);
         }
     }
 
@@ -222,6 +251,9 @@ impl App {
         match item.kind {
             SidebarItemKind::Bookmarks => {
                 self.bookmark_commands().get(self.selected_command.unwrap_or(0)).copied()
+            }
+            SidebarItemKind::History => {
+                self.history_commands().get(self.selected_command.unwrap_or(0)).copied()
             }
             SidebarItemKind::Platform => {
                 let pi = item.platform_index;
@@ -267,7 +299,7 @@ impl App {
                         }
                     }
                 }
-                SidebarItemKind::Bookmarks => {}
+                SidebarItemKind::Bookmarks | SidebarItemKind::History => {}
             }
         }
         &[]
@@ -292,11 +324,30 @@ impl App {
         result
     }
 
+    /// 获取历史命令的引用列表
+    fn history_commands(&self) -> Vec<&Command> {
+        let mut result = Vec::new();
+        for entry in self.history.all() {
+            for platform in &self.platforms {
+                if platform.name == entry.platform {
+                    for cat in &platform.categories {
+                        if cat.name == entry.category {
+                            if let Some(cmd) = cat.commands.iter().find(|c| c.name == entry.command) {
+                                result.push(cmd);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        result
+    }
+
     /// 获取当前分类信息
     pub fn current_category(&self) -> Option<&Category> {
         if let Some(item) = self.current_sidebar_item() {
             match item.kind {
-                SidebarItemKind::Bookmarks => None,
+                SidebarItemKind::Bookmarks | SidebarItemKind::History => None,
                 SidebarItemKind::Platform => {
                     self.platforms
                         .get(item.platform_index)
@@ -319,7 +370,7 @@ impl App {
     pub fn current_platform(&self) -> Option<&Platform> {
         if let Some(item) = self.current_sidebar_item() {
             match item.kind {
-                SidebarItemKind::Bookmarks => None,
+                SidebarItemKind::Bookmarks | SidebarItemKind::History => None,
                 _ => self.platforms.get(item.platform_index),
             }
         } else {
@@ -387,6 +438,16 @@ impl App {
         self.content_cursor = 0;
     }
 
+    /// 跳转到历史记录
+    pub fn jump_to_history(&mut self) {
+        self.mode = AppMode::Normal;
+        self.focus = Focus::Sidebar;
+        // History is always at index 1
+        self.sidebar_cursor = 1;
+        self.selected_command = Some(0);
+        self.content_cursor = 0;
+    }
+
     // ======== 导航操作 ========
 
     pub fn move_sidebar_up(&mut self) {
@@ -434,7 +495,7 @@ impl App {
     pub fn toggle_sidebar_item(&mut self) {
         let cursor = self.sidebar_cursor;
         if let Some(item) = self.sidebar_items.get(cursor) {
-            if item.kind == SidebarItemKind::Bookmarks {
+            if item.kind == SidebarItemKind::Bookmarks || item.kind == SidebarItemKind::History {
                 self.focus = Focus::Content;
                 return;
             }

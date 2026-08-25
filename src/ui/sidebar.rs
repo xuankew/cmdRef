@@ -49,6 +49,16 @@ pub fn draw(frame: &mut Frame, app: &App, area: Rect) {
                         ),
                     ]))
                 }
+                SidebarItemKind::History => {
+                    let history_count = app.history.count();
+                    let text = format!("🕑 History ({})", history_count);
+                    ListItem::new(Line::from(vec![
+                        Span::styled(
+                            text,
+                            if is_selected { style } else { Style::default().fg(Color::Cyan) },
+                        ),
+                    ]))
+                }
                 SidebarItemKind::Platform => {
                     if let Some(platform) = app.platforms.get(item.platform_index) {
                         let icon = if item.expanded { "▼" } else { "▶" };

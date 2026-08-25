@@ -2,6 +2,7 @@ mod app;
 mod bookmarks;
 mod clipboard;
 mod data;
+mod history;
 mod search;
 mod ui;
 mod update;
@@ -130,6 +131,7 @@ fn handle_normal_input(app: &mut App, key: KeyCode, _modifiers: KeyModifiers) {
                 KeyCode::Char('/') => app.enter_search_mode(),
                 KeyCode::Char('q') => app.should_quit = true,
                 KeyCode::Char('B') => app.jump_to_bookmarks(),
+                KeyCode::Char('H') => app.jump_to_history(),
                 KeyCode::Char('1') => app.jump_to_platform(0),
                 KeyCode::Char('2') => app.jump_to_platform(1),
                 KeyCode::Char('3') => app.jump_to_platform(2),
@@ -147,6 +149,7 @@ fn handle_normal_input(app: &mut App, key: KeyCode, _modifiers: KeyModifiers) {
                 KeyCode::Char('y') => app.copy_current_command(),
                 KeyCode::Char('b') => app.toggle_bookmark(),
                 KeyCode::Char('B') => app.jump_to_bookmarks(),
+                KeyCode::Char('H') => app.jump_to_history(),
                 KeyCode::Char('q') => app.should_quit = true,
                 KeyCode::Esc => { app.focus = Focus::Sidebar; }
                 _ => {}

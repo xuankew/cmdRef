@@ -35,6 +35,7 @@ fn draw_main_layout(frame: &mut Frame, app: &App) {
         "Linux"
     };
     let bm_count = app.bookmarks.count();
+    let hist_count = app.history.count();
     let title = Paragraph::new(Line::from(vec![
         Span::styled(" CmdRef ", Style::default().fg(Color::White).bg(Color::Blue).add_modifier(Modifier::BOLD)),
         Span::raw(" - "),
@@ -51,6 +52,14 @@ fn draw_main_layout(frame: &mut Frame, app: &App) {
             Span::styled(
                 format!("  ★{}", bm_count),
                 Style::default().fg(Color::Yellow),
+            )
+        } else {
+            Span::raw("")
+        },
+        if hist_count > 0 {
+            Span::styled(
+                format!("  🕑{}", hist_count),
+                Style::default().fg(Color::Cyan),
             )
         } else {
             Span::raw("")
