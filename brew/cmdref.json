@@ -6,7 +6,7 @@
     "architecture": {
         "64bit": {
             "url": "https://github.com/xuankew/cmdRef/releases/download/v0.1.0/cmdref.exe",
-            "hash": "SHA256_PLACEHOLDER_WINDOWS"
+            "hash": "a42ea1b6cc5da101f8d2fe6f9db65306191c8ca3e125dd1873d528597f4bbdf4"
         }
     },
     "bin": "cmdref.exe",
