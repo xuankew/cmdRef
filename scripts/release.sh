@@ -75,11 +75,14 @@ FORMULA_FILE="${PROJECT_DIR}/brew/cmdref.rb"
 
 sed -i.bak \
     -e "s|version \".*\"|version \"${VERSION}\"|" \
-    -e "s|releases/download/v[^\"]*|releases/download/v${VERSION}|g" \
-    -e "s|SHA256_PLACEHOLDER_MACOS_AARCH64|${HASH_MACOS_AARCH64}|" \
-    -e "s|SHA256_PLACEHOLDER_MACOS_X86_64|${HASH_MACOS_X86_64}|" \
-    -e "s|SHA256_PLACEHOLDER_LINUX_AARCH64|${HASH_LINUX_AARCH64}|" \
-    -e "s|SHA256_PLACEHOLDER_LINUX_X86_64|${HASH_LINUX_X86_64}|" \
+    -e "s|DOWNLOAD_URL_MACOS_AARCH64|${BASE_URL}/cmdref-macos-aarch64|" \
+    -e "s|DOWNLOAD_URL_MACOS_X86_64|${BASE_URL}/cmdref-macos-x86_64|" \
+    -e "s|DOWNLOAD_URL_LINUX_AARCH64|${BASE_URL}/cmdref-linux-aarch64|" \
+    -e "s|DOWNLOAD_URL_LINUX_X86_64|${BASE_URL}/cmdref-linux-x86_64|" \
+    -e "s|SHA256_MACOS_AARCH64|${HASH_MACOS_AARCH64}|" \
+    -e "s|SHA256_MACOS_X86_64|${HASH_MACOS_X86_64}|" \
+    -e "s|SHA256_LINUX_AARCH64|${HASH_LINUX_AARCH64}|" \
+    -e "s|SHA256_LINUX_X86_64|${HASH_LINUX_X86_64}|" \
     "$FORMULA_FILE"
 rm -f "${FORMULA_FILE}.bak"
 echo "  Updated: ${FORMULA_FILE}"
@@ -117,24 +120,15 @@ echo "   version = \"${VERSION}\""
 echo ""
 echo "2. 提交并推送更改:"
 echo "   git add -A && git commit -m 'release v${VERSION}'"
-echo "   git tag v${VERSION}"
-echo "   git push origin main --tags"
+echo "   git push origin main"
 echo ""
-echo "3. 发布到 crates.io:"
-echo "   cargo publish"
-echo ""
-echo "4. Homebrew (将 brew/cmdref.rb 复制到 homebrew-cmdref 仓库):"
-echo "   # 如果还没有 tap 仓库，先在 GitHub 创建 xuankew/homebrew-cmdref"
-echo "   cp brew/cmdref.rb /tmp/cmdref.rb"
-echo "   git clone git@github.com:xuankew/homebrew-cmdref.git /tmp/homebrew-cmdref"
-echo "   cp /tmp/cmdref.rb /tmp/homebrew-cmdref/cmdref.rb"
-echo "   cd /tmp/homebrew-cmdref && git add . && git commit -m 'v${VERSION}' && git push"
+echo "3. Homebrew (同步 Formula 到 homebrew-cmdref tap 仓库):"
+echo "   cp brew/cmdref.rb ../homebrew-cmdref/cmdref.rb"
+echo "   cd ../homebrew-cmdref && git add . && git commit -m 'v${VERSION}' && git push"
 echo ""
 echo "   用户安装: brew tap xuankew/cmdref && brew install cmdref"
 echo ""
-echo "5. Scoop (将 brew/cmdref.json 推送到 bucket 仓库):"
-echo "   # 类似地，创建一个 GitHub 仓库 xuankew/scoop-bucket"
-echo "   # 用户安装: scoop bucket add xuanke https://github.com/xuankew/scoop-bucket"
-echo "   #           scoop install cmdref"
+echo "4. 发布到 crates.io:"
+echo "   cargo publish"
 echo ""
 echo "Done!"
