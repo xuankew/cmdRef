@@ -1,5 +1,6 @@
 use crate::data::{Command, Category, Platform};
 use crate::search::SearchEngine;
+use crate::bookmarks::BookmarkManager;
 
 /// 焦点所在的面板
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -19,6 +20,7 @@ pub enum AppMode {
 /// 侧边栏中的项目类型
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum SidebarItemKind {
+    Bookmarks,
     Platform,
     Category,
 }
@@ -36,6 +38,7 @@ pub struct SidebarItem {
 pub struct App {
     pub platforms: Vec<Platform>,
     pub search_engine: SearchEngine,
+    pub bookmarks: BookmarkManager,
 
     // 侧边栏状态
     pub sidebar_items: Vec<SidebarItem>,
@@ -43,7 +46,7 @@ pub struct App {
 
     // 内容区域状态
     pub content_cursor: usize,
-    pub selected_command: Option<usize>, // 当前在 category commands 中的索引
+    pub selected_command: Option<usize>,
 
     // 焦点和模式
     pub focus: Focus,
@@ -53,6 +56,10 @@ pub struct App {
     pub search_query: String,
     pub search_results: Vec<SearchResultIndex>,
     pub search_cursor: usize,
+
+    // 状态消息（复制反馈等）
+    pub status_message: String,
+    pub status_clear_counter: u8,
 
     // 退出标志
     pub should_quit: bool,
@@ -72,17 +79,27 @@ impl App {
     pub fn new(platforms: Vec<Platform>) -> Self {
         let mut sidebar_items = Vec::new();
 
+        // 第一项：Bookmarks
+        sidebar_items.push(SidebarItem {
+            kind: SidebarItemKind::Bookmarks,
+            platform_index: 0,
+            category_index: None,
+            expanded: false,
+        });
+
+        // 检测当前平台
+        let detected_platform = Self::detect_platform_index(&platforms);
+
         for (pi, platform) in platforms.iter().enumerate() {
-            // 平台项
+            let is_current = pi == detected_platform;
             sidebar_items.push(SidebarItem {
                 kind: SidebarItemKind::Platform,
                 platform_index: pi,
                 category_index: None,
-                expanded: pi == 0, // 默认展开第一个
+                expanded: is_current,
             });
 
-            // 默认展开第一个平台的分类
-            if pi == 0 {
+            if is_current {
                 for (ci, _) in platform.categories.iter().enumerate() {
                     sidebar_items.push(SidebarItem {
                         kind: SidebarItemKind::Category,
@@ -95,12 +112,20 @@ impl App {
         }
 
         let search_engine = SearchEngine::new();
+        let bookmarks = BookmarkManager::new();
+
+        // 光标定位到当前检测到的平台
+        let initial_cursor = sidebar_items
+            .iter()
+            .position(|item| item.kind == SidebarItemKind::Platform && item.platform_index == detected_platform)
+            .unwrap_or(1);
 
         let mut app = App {
             platforms,
             search_engine,
+            bookmarks,
             sidebar_items,
-            sidebar_cursor: 0,
+            sidebar_cursor: initial_cursor,
             content_cursor: 0,
             selected_command: Some(0),
             focus: Focus::Sidebar,
@@ -108,25 +133,63 @@ impl App {
             search_query: String::new(),
             search_results: Vec::new(),
             search_cursor: 0,
+            status_message: String::new(),
+            status_clear_counter: 0,
             should_quit: false,
         };
 
-        // 初始化选中第一个命令
         app.update_selection();
         app
+    }
+
+    /// 检测当前操作系统对应的平台索引
+    fn detect_platform_index(platforms: &[Platform]) -> usize {
+        let os_name = if cfg!(target_os = "macos") {
+            "mac"
+        } else if cfg!(target_os = "linux") {
+            "linux"
+        } else if cfg!(target_os = "windows") {
+            "windows"
+        } else {
+            "linux"
+        };
+
+        platforms
+            .iter()
+            .position(|p| p.name == os_name)
+            .unwrap_or(0)
+    }
+
+    /// 设置状态消息（自动在几次绘制后清除）
+    fn set_status(&mut self, msg: String) {
+        self.status_message = msg;
+        self.status_clear_counter = 0;
+    }
+
+    /// 每帧调用，递减状态消息计数器
+    pub fn tick(&mut self) {
+        if !self.status_message.is_empty() {
+            self.status_clear_counter += 1;
+            if self.status_clear_counter > 40 {
+                self.status_message.clear();
+            }
+        }
     }
 
     /// 更新当前选中项
     fn update_selection(&mut self) {
         if let Some(item) = self.current_sidebar_item() {
             match item.kind {
+                SidebarItemKind::Bookmarks => {
+                    self.selected_command = Some(0);
+                    self.content_cursor = 0;
+                }
                 SidebarItemKind::Platform => {
                     let pi = item.platform_index;
                     if let Some(platform) = self.platforms.get(pi) {
-                        if let Some(cat) = platform.categories.first() {
+                        if let Some(_cat) = platform.categories.first() {
                             self.selected_command = Some(0);
                             self.content_cursor = 0;
-                            let _ = cat; // suppress unused warning
                         }
                     }
                 }
@@ -146,7 +209,6 @@ impl App {
     /// 获取当前应该显示的命令
     pub fn current_command(&self) -> Option<&Command> {
         if self.mode == AppMode::Search {
-            // 搜索模式下，返回搜索结果中的命令
             if let Some(result) = self.search_results.get(self.search_cursor) {
                 return self.platforms
                     .get(result.platform_index)
@@ -158,6 +220,9 @@ impl App {
 
         let item = self.current_sidebar_item()?;
         match item.kind {
+            SidebarItemKind::Bookmarks => {
+                self.bookmark_commands().get(self.selected_command.unwrap_or(0)).copied()
+            }
             SidebarItemKind::Platform => {
                 let pi = item.platform_index;
                 self.platforms
@@ -202,15 +267,36 @@ impl App {
                         }
                     }
                 }
+                SidebarItemKind::Bookmarks => {}
             }
         }
         &[]
+    }
+
+    /// 获取书签命令的引用列表
+    fn bookmark_commands(&self) -> Vec<&Command> {
+        let mut result = Vec::new();
+        for bm in self.bookmarks.all() {
+            for platform in &self.platforms {
+                if platform.name == bm.platform {
+                    for cat in &platform.categories {
+                        if cat.name == bm.category {
+                            if let Some(cmd) = cat.commands.iter().find(|c| c.name == bm.command) {
+                                result.push(cmd);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        result
     }
 
     /// 获取当前分类信息
     pub fn current_category(&self) -> Option<&Category> {
         if let Some(item) = self.current_sidebar_item() {
             match item.kind {
+                SidebarItemKind::Bookmarks => None,
                 SidebarItemKind::Platform => {
                     self.platforms
                         .get(item.platform_index)
@@ -230,13 +316,75 @@ impl App {
     }
 
     /// 获取当前平台信息
-    #[allow(dead_code)]
     pub fn current_platform(&self) -> Option<&Platform> {
         if let Some(item) = self.current_sidebar_item() {
-            self.platforms.get(item.platform_index)
+            match item.kind {
+                SidebarItemKind::Bookmarks => None,
+                _ => self.platforms.get(item.platform_index),
+            }
         } else {
             None
         }
+    }
+
+    /// 检查当前命令是否已收藏
+    pub fn is_current_bookmarked(&self) -> bool {
+        if let (Some(platform), Some(cat), Some(cmd)) =
+            (self.current_platform(), self.current_category(), self.current_command())
+        {
+            self.bookmarks.is_bookmarked(&platform.name, &cat.name, &cmd.name)
+        } else {
+            false
+        }
+    }
+
+    // ======== 功能操作 ========
+
+    /// 复制当前命令的第一个示例代码到剪贴板
+    pub fn copy_current_command(&mut self) {
+        if let Some(cmd) = self.current_command() {
+            // 优先复制第一个 example code，否则复制命令名
+            let text = cmd
+                .examples
+                .first()
+                .map(|e| e.code.clone())
+                .unwrap_or_else(|| cmd.name.clone());
+
+            match crate::clipboard::copy_to_clipboard(&text) {
+                Ok(()) => {
+                    let preview = if text.len() > 40 { &text[..40] } else { &text };
+                    self.set_status(format!("✓ Copied: {}", preview));
+                }
+                Err(e) => {
+                    self.set_status(format!("✗ Copy failed: {}", e));
+                }
+            }
+        }
+    }
+
+    /// 切换当前命令的书签状态
+    pub fn toggle_bookmark(&mut self) {
+        if let (Some(platform), Some(cat), Some(cmd)) = (
+            self.current_platform().map(|p| p.name.clone()),
+            self.current_category().map(|c| c.name.clone()),
+            self.current_command().map(|c| c.name.clone()),
+        ) {
+            let added = self.bookmarks.toggle(&platform, &cat, &cmd);
+            if added {
+                self.set_status(format!("★ Bookmarked: {}", cmd));
+            } else {
+                self.set_status(format!("☆ Removed: {}", cmd));
+            }
+        }
+    }
+
+    /// 跳转到书签列表
+    pub fn jump_to_bookmarks(&mut self) {
+        self.mode = AppMode::Normal;
+        self.focus = Focus::Sidebar;
+        self.sidebar_cursor = 0;
+        self.selected_command = Some(0);
+        self.content_cursor = 0;
     }
 
     // ======== 导航操作 ========
@@ -265,9 +413,18 @@ impl App {
     }
 
     pub fn move_content_down(&mut self) {
-        let commands = self.current_category_commands();
+        let len = if let Some(item) = self.current_sidebar_item() {
+            if item.kind == SidebarItemKind::Bookmarks {
+                self.bookmarks.count()
+            } else {
+                self.current_category_commands().len()
+            }
+        } else {
+            0
+        };
+
         if let Some(idx) = self.selected_command {
-            if idx < commands.len().saturating_sub(1) {
+            if idx < len.saturating_sub(1) {
                 self.selected_command = Some(idx + 1);
                 self.content_cursor = idx + 1;
             }
@@ -277,20 +434,22 @@ impl App {
     pub fn toggle_sidebar_item(&mut self) {
         let cursor = self.sidebar_cursor;
         if let Some(item) = self.sidebar_items.get(cursor) {
+            if item.kind == SidebarItemKind::Bookmarks {
+                self.focus = Focus::Content;
+                return;
+            }
             if item.kind == SidebarItemKind::Platform {
                 let pi = item.platform_index;
                 let was_expanded = item.expanded;
 
-                // 重建侧边栏
                 let mut new_items = Vec::new();
-                for (i, si) in self.sidebar_items.iter().enumerate() {
+                for si in self.sidebar_items.iter() {
                     if si.kind == SidebarItemKind::Platform && si.platform_index == pi {
                         new_items.push(SidebarItem {
                             expanded: !was_expanded,
                             ..si.clone()
                         });
                         if !was_expanded {
-                            // 展开：插入子分类
                             if let Some(platform) = self.platforms.get(pi) {
                                 for (ci, _) in platform.categories.iter().enumerate() {
                                     new_items.push(SidebarItem {
@@ -304,7 +463,6 @@ impl App {
                         }
                     } else if si.kind == SidebarItemKind::Category && si.platform_index == pi {
                         if was_expanded {
-                            // 折叠：跳过此项
                             continue;
                         } else {
                             new_items.push(si.clone());
@@ -312,12 +470,9 @@ impl App {
                     } else {
                         new_items.push(si.clone());
                     }
-                    // 保留非当前平台的项
-                    let _ = i;
                 }
                 self.sidebar_items = new_items;
 
-                // 确保光标有效
                 if self.sidebar_cursor >= self.sidebar_items.len() {
                     self.sidebar_cursor = self.sidebar_items.len().saturating_sub(1);
                 }
@@ -376,7 +531,6 @@ impl App {
         self.search_results = results
             .into_iter()
             .map(|r| {
-                // 找到对应的索引
                 let pi = self.platforms.iter().position(|p| std::ptr::eq(p, r.platform)).unwrap_or(0);
                 let ci = self.platforms[pi].categories.iter().position(|c| std::ptr::eq(c, r.category)).unwrap_or(0);
                 let cmi = self.platforms[pi].categories[ci].commands.iter().position(|cmd| std::ptr::eq(cmd, r.command)).unwrap_or(0);
@@ -394,17 +548,14 @@ impl App {
     /// 从搜索结果跳转到命令详情
     pub fn select_search_result(&mut self) {
         if let Some(result) = self.search_results.get(self.search_cursor).cloned() {
-            // 找到对应的侧边栏项并跳转
             self.mode = AppMode::Normal;
             self.focus = Focus::Content;
 
-            // 确保目标平台已展开
             let target_pi = result.platform_index;
             let target_ci = result.category_index;
 
-            // 展开平台
             let mut found_platform = false;
-            for (_i, item) in self.sidebar_items.iter().enumerate() {
+            for item in self.sidebar_items.iter() {
                 if item.kind == SidebarItemKind::Platform && item.platform_index == target_pi {
                     if !item.expanded {
                         self.toggle_sidebar_item();
@@ -418,7 +569,6 @@ impl App {
                 return;
             }
 
-            // 找到对应的分类项
             for (i, item) in self.sidebar_items.iter().enumerate() {
                 if item.kind == SidebarItemKind::Category
                     && item.platform_index == target_pi

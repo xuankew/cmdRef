@@ -22,6 +22,8 @@ pub fn draw(frame: &mut Frame, app: &App, area: Rect) {
         return;
     }
 
+    let bookmark_count = app.bookmarks.count();
+
     // 构建列表项
     let items: Vec<ListItem> = app
         .sidebar_items
@@ -38,6 +40,15 @@ pub fn draw(frame: &mut Frame, app: &App, area: Rect) {
             };
 
             match item.kind {
+                SidebarItemKind::Bookmarks => {
+                    let text = format!("★ Bookmarks ({})", bookmark_count);
+                    ListItem::new(Line::from(vec![
+                        Span::styled(
+                            text,
+                            if is_selected { style } else { Style::default().fg(Color::Yellow) },
+                        ),
+                    ]))
+                }
                 SidebarItemKind::Platform => {
                     if let Some(platform) = app.platforms.get(item.platform_index) {
                         let icon = if item.expanded { "▼" } else { "▶" };

@@ -1,18 +1,26 @@
 use ratatui::prelude::*;
 use ratatui::widgets::*;
-use crate::app::{App, Focus};
+use crate::app::{App, Focus, SidebarItemKind};
 
 /// 渲染内容面板
 pub fn draw(frame: &mut Frame, app: &App, area: Rect) {
     let is_focused = app.focus == Focus::Content;
 
     // 获取当前分类信息
-    let category_name = app.current_category()
-        .map(|c| format!(" {} ", c.name))
-        .unwrap_or_else(|| " Command Details ".to_string());
+    let title = if let Some(item) = app.sidebar_items.get(app.sidebar_cursor) {
+        if item.kind == SidebarItemKind::Bookmarks {
+            " ★ Bookmarks ".to_string()
+        } else {
+            app.current_category()
+                .map(|c| format!(" {} ", c.name))
+                .unwrap_or_else(|| " Command Details ".to_string())
+        }
+    } else {
+        " Command Details ".to_string()
+    };
 
     let block = Block::default()
-        .title(category_name)
+        .title(title)
         .borders(Borders::ALL)
         .border_style(if is_focused {
             Style::default().fg(Color::Cyan)
@@ -41,8 +49,46 @@ pub fn draw(frame: &mut Frame, app: &App, area: Rect) {
 
 /// 渲染命令列表
 fn draw_command_list(frame: &mut Frame, app: &App, area: Rect) {
-    let commands = app.current_category_commands();
     let selected = app.selected_command.unwrap_or(0);
+
+    // Bookmarks 模式：显示收藏的命令
+    if let Some(item) = app.sidebar_items.get(app.sidebar_cursor) {
+        if item.kind == SidebarItemKind::Bookmarks {
+            let bm_commands: Vec<String> = app.bookmarks.all().iter().map(|b| {
+                format!("{} > {}", b.category, b.command)
+            }).collect();
+
+            if bm_commands.is_empty() {
+                let empty = Paragraph::new("  (no bookmarks yet)\n\n  Press 'b' on a command\n  to bookmark it")
+                    .style(Style::default().fg(Color::DarkGray));
+                frame.render_widget(empty, area);
+                return;
+            }
+
+            let items: Vec<ListItem> = bm_commands
+                .iter()
+                .enumerate()
+                .map(|(i, name)| {
+                    let is_selected = i == selected;
+                    let style = if is_selected {
+                        Style::default().fg(Color::Black).bg(Color::Yellow).add_modifier(Modifier::BOLD)
+                    } else {
+                        Style::default().fg(Color::Yellow)
+                    };
+                    ListItem::new(Line::from(vec![
+                        Span::styled(format!("  ★ {}", name), style),
+                    ]))
+                })
+                .collect();
+
+            let list = List::new(items);
+            frame.render_widget(list, area);
+            return;
+        }
+    }
+
+    // 普通模式
+    let commands = app.current_category_commands();
 
     if commands.is_empty() {
         let empty = Paragraph::new("  (no commands)")
@@ -61,9 +107,21 @@ fn draw_command_list(frame: &mut Frame, app: &App, area: Rect) {
             } else {
                 Style::default().fg(Color::White)
             };
+
+            // 检查是否已收藏
+            let bm_icon = if let (Some(platform), Some(cat)) = (app.current_platform(), app.current_category()) {
+                if app.bookmarks.is_bookmarked(&platform.name, &cat.name, &cmd.name) {
+                    "★ "
+                } else {
+                    "  "
+                }
+            } else {
+                "  "
+            };
+
             ListItem::new(Line::from(vec![
                 Span::styled(
-                    format!("  {} ", cmd.name),
+                    format!("  {}{}", bm_icon, cmd.name),
                     style,
                 ),
             ]))
@@ -88,10 +146,22 @@ fn draw_command_detail(frame: &mut Frame, app: &App, area: Rect) {
 
     let mut lines: Vec<Line> = Vec::new();
 
+    // 状态消息（如果有）
+    if !app.status_message.is_empty() {
+        lines.push(Line::from(vec![
+            Span::styled(
+                format!("  {}", app.status_message),
+                Style::default().fg(Color::Green).add_modifier(Modifier::BOLD),
+            ),
+        ]));
+        lines.push(Line::from(""));
+    }
+
     // 命令名和摘要
+    let bookmark_indicator = if app.is_current_bookmarked() { " ★" } else { "" };
     lines.push(Line::from(vec![
         Span::styled(
-            format!("  {} ", cmd.name),
+            format!("  {}{} ", cmd.name, bookmark_indicator),
             Style::default().fg(Color::Yellow).add_modifier(Modifier::BOLD),
         ),
         Span::styled(

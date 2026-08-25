@@ -27,13 +27,34 @@ fn draw_main_layout(frame: &mut Frame, app: &App) {
         .split(size);
 
     // 标题栏
+    let detected = if cfg!(target_os = "macos") {
+        "macOS"
+    } else if cfg!(target_os = "windows") {
+        "Windows"
+    } else {
+        "Linux"
+    };
+    let bm_count = app.bookmarks.count();
     let title = Paragraph::new(Line::from(vec![
         Span::styled(" CmdRef ", Style::default().fg(Color::White).bg(Color::Blue).add_modifier(Modifier::BOLD)),
         Span::raw(" - "),
         Span::styled(
-            format!("命令速查 ({} commands)", app.total_commands()),
+            format!("{} commands", app.total_commands()),
             Style::default().fg(Color::Gray),
         ),
+        Span::raw("  "),
+        Span::styled(
+            format!("[{}]", detected),
+            Style::default().fg(Color::Cyan),
+        ),
+        if bm_count > 0 {
+            Span::styled(
+                format!("  ★{}", bm_count),
+                Style::default().fg(Color::Yellow),
+            )
+        } else {
+            Span::raw("")
+        },
     ]));
     frame.render_widget(title, main_chunks[0]);
 

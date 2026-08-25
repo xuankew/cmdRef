@@ -37,20 +37,48 @@ impl SearchEngine {
         for platform in platforms {
             for category in &platform.categories {
                 for command in &category.commands {
-                    // 对命令名称和摘要进行模糊匹配
+                    // 对命令名称、摘要、示例代码、tips 进行模糊匹配
                     let name_score = self.matcher.fuzzy_match(&command.name, query);
                     let summary_score = self.matcher.fuzzy_match(&command.summary, query);
 
-                    // 取最高分，名称匹配加权
-                    let score = match (name_score, summary_score) {
-                        (Some(n), Some(s)) => {
-                            // 名称匹配加权 x3
-                            n * 3 + s
-                        }
-                        (Some(n), None) => n * 3,
-                        (None, Some(s)) => s,
-                        (None, None) => continue,
-                    };
+                    // 搜索 example code
+                    let example_score = command
+                        .examples
+                        .iter()
+                        .filter_map(|e| self.matcher.fuzzy_match(&e.code, query))
+                        .max();
+
+                    // 搜索 tips
+                    let tips_score = command
+                        .tips
+                        .iter()
+                        .filter_map(|t| self.matcher.fuzzy_match(t, query))
+                        .max();
+
+                    // 综合评分：名称 x3, 摘要 x1, examples x1, tips x0.5
+                    let mut score: i64 = 0;
+                    let mut matched = false;
+
+                    if let Some(n) = name_score {
+                        score += n * 3;
+                        matched = true;
+                    }
+                    if let Some(s) = summary_score {
+                        score += s;
+                        matched = true;
+                    }
+                    if let Some(e) = example_score {
+                        score += e;
+                        matched = true;
+                    }
+                    if let Some(t) = tips_score {
+                        score += t / 2;
+                        matched = true;
+                    }
+
+                    if !matched {
+                        continue;
+                    }
 
                     results.push(SearchResult {
                         platform,
@@ -62,7 +90,6 @@ impl SearchEngine {
             }
         }
 
-        // 按分数降序排序
         results.sort_by(|a, b| b.score.cmp(&a.score));
         results
     }

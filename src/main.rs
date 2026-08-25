@@ -1,4 +1,6 @@
 mod app;
+mod bookmarks;
+mod clipboard;
 mod data;
 mod search;
 mod ui;
@@ -111,6 +113,9 @@ fn run_app(
                 }
             }
         }
+
+        // 每帧更新（状态消息衰减等）
+        app.tick();
     }
 }
 
@@ -124,6 +129,7 @@ fn handle_normal_input(app: &mut App, key: KeyCode, _modifiers: KeyModifiers) {
                 KeyCode::Tab => app.switch_focus(),
                 KeyCode::Char('/') => app.enter_search_mode(),
                 KeyCode::Char('q') => app.should_quit = true,
+                KeyCode::Char('B') => app.jump_to_bookmarks(),
                 KeyCode::Char('1') => app.jump_to_platform(0),
                 KeyCode::Char('2') => app.jump_to_platform(1),
                 KeyCode::Char('3') => app.jump_to_platform(2),
@@ -138,6 +144,9 @@ fn handle_normal_input(app: &mut App, key: KeyCode, _modifiers: KeyModifiers) {
                 KeyCode::Char('k') | KeyCode::Up => app.move_content_up(),
                 KeyCode::Tab => app.switch_focus(),
                 KeyCode::Char('/') => app.enter_search_mode(),
+                KeyCode::Char('y') => app.copy_current_command(),
+                KeyCode::Char('b') => app.toggle_bookmark(),
+                KeyCode::Char('B') => app.jump_to_bookmarks(),
                 KeyCode::Char('q') => app.should_quit = true,
                 KeyCode::Esc => { app.focus = Focus::Sidebar; }
                 _ => {}
