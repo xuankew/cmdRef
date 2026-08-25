@@ -30,37 +30,43 @@ TEMP_DIR=$(mktemp -d)
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_DIR="$(dirname "$SCRIPT_DIR")"
 
+# 用于存储 SHA256 的变量（兼容 bash 3.x，不用 declare -A）
+HASH_MACOS_AARCH64=""
+HASH_MACOS_X86_64=""
+HASH_LINUX_AARCH64=""
+HASH_LINUX_X86_64=""
+HASH_WINDOWS=""
+
 echo "=========================================="
 echo "  CmdRef Release Helper v${VERSION}"
 echo "=========================================="
 echo ""
 
-# 下载各平台二进制文件并计算 SHA256
-declare -A HASHES
-
 download_and_hash() {
     local name="$1"
+    local var_name="$2"
     local url="${BASE_URL}/${name}"
     local file="${TEMP_DIR}/${name}"
 
     echo -n "  Downloading ${name}... "
     if curl -fsSL -o "$file" "$url" 2>/dev/null; then
-        HASHES["$name"]=$(shasum -a 256 "$file" | awk '{print $1}')
-        echo "OK (SHA256: ${HASHES[$name]:0:16}...)"
+        local hash
+        hash=$(shasum -a 256 "$file" | awk '{print $1}')
+        eval "${var_name}=\"${hash}\""
+        echo "OK (SHA256: ${hash:0:16}...)"
     else
         echo "FAILED"
-        echo "  Warning: Could not download ${name}"
-        HASHES["$name"]="SHA256_NOT_AVAILABLE"
+        eval "${var_name}=\"SHA256_NOT_AVAILABLE\""
     fi
 }
 
 echo "[1/3] Downloading release binaries and computing SHA256..."
 echo ""
-download_and_hash "cmdref-macos-aarch64"
-download_and_hash "cmdref-macos-x86_64"
-download_and_hash "cmdref-linux-aarch64"
-download_and_hash "cmdref-linux-x86_64"
-download_and_hash "cmdref.exe"
+download_and_hash "cmdref-macos-aarch64" "HASH_MACOS_AARCH64"
+download_and_hash "cmdref-macos-x86_64"  "HASH_MACOS_X86_64"
+download_and_hash "cmdref-linux-aarch64" "HASH_LINUX_AARCH64"
+download_and_hash "cmdref-linux-x86_64"  "HASH_LINUX_X86_64"
+download_and_hash "cmdref.exe"           "HASH_WINDOWS"
 echo ""
 
 # 更新 Homebrew Formula
@@ -70,10 +76,10 @@ FORMULA_FILE="${PROJECT_DIR}/brew/cmdref.rb"
 sed -i.bak \
     -e "s|version \".*\"|version \"${VERSION}\"|" \
     -e "s|releases/download/v[^\"]*|releases/download/v${VERSION}|g" \
-    -e "s|SHA256_PLACEHOLDER_MACOS_AARCH64|${HASHES[cmdref-macos-aarch64]}|" \
-    -e "s|SHA256_PLACEHOLDER_MACOS_X86_64|${HASHES[cmdref-macos-x86_64]}|" \
-    -e "s|SHA256_PLACEHOLDER_LINUX_AARCH64|${HASHES[cmdref-linux-aarch64]}|" \
-    -e "s|SHA256_PLACEHOLDER_LINUX_X86_64|${HASHES[cmdref-linux-x86_64]}|" \
+    -e "s|SHA256_PLACEHOLDER_MACOS_AARCH64|${HASH_MACOS_AARCH64}|" \
+    -e "s|SHA256_PLACEHOLDER_MACOS_X86_64|${HASH_MACOS_X86_64}|" \
+    -e "s|SHA256_PLACEHOLDER_LINUX_AARCH64|${HASH_LINUX_AARCH64}|" \
+    -e "s|SHA256_PLACEHOLDER_LINUX_X86_64|${HASH_LINUX_X86_64}|" \
     "$FORMULA_FILE"
 rm -f "${FORMULA_FILE}.bak"
 echo "  Updated: ${FORMULA_FILE}"
@@ -83,14 +89,13 @@ echo ""
 echo "[3/3] Updating Scoop manifest..."
 MANIFEST_FILE="${PROJECT_DIR}/brew/cmdref.json"
 
-# Use python3 for JSON manipulation (available on most systems)
 python3 -c "
-import json, sys
+import json
 with open('${MANIFEST_FILE}', 'r') as f:
     data = json.load(f)
 data['version'] = '${VERSION}'
 data['architecture']['64bit']['url'] = '${BASE_URL}/cmdref.exe'
-data['architecture']['64bit']['hash'] = '${HASHES[cmdref.exe]}'
+data['architecture']['64bit']['hash'] = '${HASH_WINDOWS}'
 data['autoupdate']['architecture']['64bit']['url'] = 'https://github.com/${REPO}/releases/download/v\$version/cmdref.exe'
 with open('${MANIFEST_FILE}', 'w') as f:
     json.dump(data, f, indent=4)
