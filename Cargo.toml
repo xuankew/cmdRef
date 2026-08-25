@@ -5,7 +5,7 @@ edition = "2021"
 authors = ["xuanke"]
 description = "Interactive command reference tool for Linux, macOS, Windows and testing commands"
 license = "MIT"
-repository = "https://github.com/xuanke/command-tool"
+repository = "https://github.com/xuankew/cmdRef"
 keywords = ["cli", "cheatsheet", "commands", "reference", "tui"]
 categories = ["command-line-utilities"]
 

@@ -1,10 +1,10 @@
 #!/bin/bash
 # CmdRef - Interactive Command Reference Tool Installer
-# Usage: curl -fsSL https://raw.githubusercontent.com/xuanke/command-tool/main/install.sh | bash
+# Usage: curl -fsSL https://raw.githubusercontent.com/xuankew/cmdRef/main/install.sh | bash
 
 set -euo pipefail
 
-REPO="xuanke/command-tool"
+REPO="xuankew/cmdRef"
 BINARY_NAME="cmdref"
 VERSION="${1:-latest}"
 

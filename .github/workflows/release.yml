@@ -20,14 +20,14 @@ jobs:
             os: ubuntu-latest
             name: cmdref-linux-aarch64
           - target: x86_64-apple-darwin
-            os: macos-13
+            os: macos-latest
             name: cmdref-macos-x86_64
           - target: aarch64-apple-darwin
             os: macos-latest
             name: cmdref-macos-aarch64
           - target: x86_64-pc-windows-msvc
             os: windows-latest
-            name: cmdref-windows-x86_64.exe
+            name: cmdref-windows-x86_64
 
     runs-on: ${{ matrix.os }}
     steps:
@@ -52,7 +52,9 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.name }}
-          path: target/${{ matrix.target }}/release/cmdref*
+          path: |
+            target/${{ matrix.target }}/release/cmdref
+            target/${{ matrix.target }}/release/cmdref.exe
 
   release:
     needs: build
@@ -72,7 +74,7 @@ jobs:
           cp artifacts/cmdref-linux-aarch64/cmdref release/cmdref-linux-aarch64
           cp artifacts/cmdref-macos-x86_64/cmdref release/cmdref-macos-x86_64
           cp artifacts/cmdref-macos-aarch64/cmdref release/cmdref-macos-aarch64
-          cp artifacts/cmdref-windows-x86_64.exe/cmdref.exe release/cmdref.exe
+          cp artifacts/cmdref-windows-x86_64/cmdref.exe release/cmdref.exe
 
       - name: Create Release
         uses: softprops/action-gh-release@v2

@@ -1,9 +1,9 @@
 # CmdRef - Interactive Command Reference Tool Installer (Windows)
-# Usage: irm https://raw.githubusercontent.com/xuanke/command-tool/main/install.ps1 | iex
+# Usage: irm https://raw.githubusercontent.com/xuankew/cmdRef/main/install.ps1 | iex
 
 $ErrorActionPreference = "Stop"
 
-$Repo = "xuanke/command-tool"
+$Repo = "xuankew/cmdRef"
 $BinaryName = "cmdref.exe"
 $Version = if ($args[0]) { $args[0] } else { "latest" }
 

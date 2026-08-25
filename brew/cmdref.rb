@@ -1,25 +1,25 @@
 class Cmdref < Formula
   desc "Interactive command reference tool for Linux, macOS, Windows and testing commands"
-  homepage "https://github.com/xuanke/command-tool"
+  homepage "https://github.com/xuankew/cmdRef"
   version "0.1.0"
   license "MIT"
 
   on_macos do
     if Hardware::CPU.arm?
-      url "https://github.com/xuanke/command-tool/releases/download/v0.1.0/cmdref-macos-aarch64"
+      url "https://github.com/xuankew/cmdRef/releases/download/v0.1.0/cmdref-macos-aarch64"
       sha256 "SHA256_PLACEHOLDER_MACOS_AARCH64"
     else
-      url "https://github.com/xuanke/command-tool/releases/download/v0.1.0/cmdref-macos-x86_64"
+      url "https://github.com/xuankew/cmdRef/releases/download/v0.1.0/cmdref-macos-x86_64"
       sha256 "SHA256_PLACEHOLDER_MACOS_X86_64"
     end
   end
 
   on_linux do
     if Hardware::CPU.arm?
-      url "https://github.com/xuanke/command-tool/releases/download/v0.1.0/cmdref-linux-aarch64"
+      url "https://github.com/xuankew/cmdRef/releases/download/v0.1.0/cmdref-linux-aarch64"
       sha256 "SHA256_PLACEHOLDER_LINUX_AARCH64"
     else
-      url "https://github.com/xuanke/command-tool/releases/download/v0.1.0/cmdref-linux-x86_64"
+      url "https://github.com/xuankew/cmdRef/releases/download/v0.1.0/cmdref-linux-x86_64"
       sha256 "SHA256_PLACEHOLDER_LINUX_X86_64"
     end
   end

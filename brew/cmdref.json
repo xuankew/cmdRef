@@ -1,11 +1,11 @@
 {
     "version": "0.1.0",
     "description": "Interactive command reference tool for Linux, macOS, Windows and testing commands",
-    "homepage": "https://github.com/xuanke/command-tool",
+    "homepage": "https://github.com/xuankew/cmdRef",
     "license": "MIT",
     "architecture": {
         "64bit": {
-            "url": "https://github.com/xuanke/command-tool/releases/download/v0.1.0/cmdref.exe",
+            "url": "https://github.com/xuankew/cmdRef/releases/download/v0.1.0/cmdref.exe",
             "hash": "SHA256_PLACEHOLDER_WINDOWS"
         }
     },
@@ -14,7 +14,7 @@
     "autoupdate": {
         "architecture": {
             "64bit": {
-                "url": "https://github.com/xuanke/command-tool/releases/download/v$version/cmdref.exe"
+                "url": "https://github.com/xuankew/cmdRef/releases/download/v$version/cmdref.exe"
             }
         }
     }

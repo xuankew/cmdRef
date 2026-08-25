@@ -18,26 +18,26 @@ CmdRef is a terminal-based cheatsheet that helps developers and testers quickly 
 ### macOS / Linux
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/xuanke/command-tool/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/xuankew/cmdRef/main/install.sh | bash
 ```
 
 ### macOS (Homebrew)
 
 ```bash
-brew tap xuanke/cmdref
+brew tap xuankew/cmdref
 brew install cmdref
 ```
 
 ### Windows (PowerShell)
 
 ```powershell
-irm https://raw.githubusercontent.com/xuanke/command-tool/main/install.ps1 | iex
+irm https://raw.githubusercontent.com/xuankew/cmdRef/main/install.ps1 | iex
 ```
 
 ### From Source
 
 ```bash
-cargo install --git https://github.com/xuanke/command-tool
+cargo install --git https://github.com/xuankew/cmdRef
 ```
 
 ## Usage
@@ -137,7 +137,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for more details.
 Requires [Rust](https://rustup.rs/) 1.70+.
 
 ```bash
-git clone https://github.com/xuanke/command-tool.git
+git clone https://github.com/xuankew/cmdRef.git
 cd command-tool
 cargo build --release
 ./target/release/cmdref
