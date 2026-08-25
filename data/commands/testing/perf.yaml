@@ -1,0 +1,78 @@
+category: "性能测试"
+description: "软件测试中常用的性能测试和压测命令"
+platform: testing
+commands:
+  - name: ab
+    summary: "Apache Bench - HTTP 压测工具"
+    examples:
+      - description: "基本压测（100个请求，10并发）"
+        code: "ab -n 100 -c 10 https://example.com/"
+      - description: "POST 请求"
+        code: "ab -n 100 -c 10 -p data.json -T 'application/json' https://api.example.com/"
+      - description: "输出 HTML 报告"
+        code: "ab -n 1000 -c 50 -g report.tsv https://example.com/"
+      - description: "保持连接"
+        code: "ab -n 100 -c 10 -k https://example.com/"
+    tips:
+      - "macOS 自带 ab"
+      - "关注 Requests per second 和 Time per request"
+    related: ["wrk", "siege", "hey"]
+
+  - name: wrk
+    summary: "高性能 HTTP 压测工具"
+    examples:
+      - description: "基本压测（2线程，10连接，30秒）"
+        code: "wrk -t2 -c10 -d30s https://example.com/"
+      - description: "使用 Lua 脚本"
+        code: "wrk -t2 -c10 -d30s -s script.lua https://example.com/"
+      - description: "打印延迟统计"
+        code: "wrk -t2 -c10 -d30s --latency https://example.com/"
+    tips:
+      - "wrk 性能比 ab 更好，适合高并发压测"
+      - "需要安装: brew install wrk"
+    related: ["ab", "siege", "vegeta"]
+
+  - name: siege
+    summary: "HTTP 负载测试工具"
+    examples:
+      - description: "基本压测"
+        code: "siege -c 10 -r 100 https://example.com/"
+      - description: "持续压测60秒"
+        code: "siege -c 10 -t 60s https://example.com/"
+      - description: "从 URL 文件压测"
+        code: "siege -c 10 -r 100 -f urls.txt"
+      - description: "基准测试模式"
+        code: "siege -b -c 50 -t 30s https://example.com/"
+    tips:
+      - "-c 并发数, -r 重复次数, -t 持续时间"
+    related: ["ab", "wrk", "hey"]
+
+  - name: hey
+    summary: "现代化的 HTTP 压测工具（Go 编写）"
+    examples:
+      - description: "基本压测"
+        code: "hey -n 1000 -c 50 https://example.com/"
+      - description: "POST 请求"
+        code: "hey -n 100 -c 10 -m POST -d '{\"key\":\"value\"}' -H 'Content-Type: application/json' https://api.example.com/"
+      - description: "指定 QPS"
+        code: "hey -n 1000 -c 50 -q 100 https://example.com/"
+      - description: "持续30秒"
+        code: "hey -z 30s -c 50 https://example.com/"
+    tips:
+      - "安装: go install github.com/rakyll/hey@latest"
+      - "输出格式友好，包含直方图"
+    related: ["ab", "wrk", "vegeta"]
+
+  - name: curl (压测)
+    summary: "使用 curl 进行简单的性能测试"
+    examples:
+      - description: "测试响应时间"
+        code: "curl -o /dev/null -s -w '%{time_total}\\n' https://example.com/"
+      - description: "详细时间分解"
+        code: "curl -o /dev/null -s -w 'DNS: %{time_namelookup}s\\nConnect: %{time_connect}s\\nTTFB: %{time_starttransfer}s\\nTotal: %{time_total}s\\n' https://example.com/"
+      - description: "循环请求"
+        code: "for i in $(seq 1 10); do curl -o /dev/null -s -w '%{time_total}\\n' https://example.com/; done"
+    tips:
+      - "适合快速测试单个请求的性能"
+      - "TTFB = Time To First Byte"
+    related: ["ab", "wrk", "httpstat"]

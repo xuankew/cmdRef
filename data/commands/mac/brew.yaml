@@ -1,0 +1,77 @@
+category: "Homebrew"
+description: "macOS 包管理器 Homebrew 常用命令"
+platform: mac
+commands:
+  - name: brew install
+    summary: "安装软件包"
+    examples:
+      - description: "安装命令行工具"
+        code: "brew install wget"
+      - description: "安装 GUI 应用"
+        code: "brew install --cask visual-studio-code"
+      - description: "安装指定版本"
+        code: "brew install python@3.11"
+    tips:
+      - "brew install --cask 用于安装 GUI 应用"
+    related: ["brew uninstall", "brew search", "brew info"]
+
+  - name: brew search
+    summary: "搜索软件包"
+    examples:
+      - description: "搜索包"
+        code: "brew search python"
+      - description: "搜索 cask 应用"
+        code: "brew search --cask chrome"
+    tips:
+      - "支持正则表达式搜索"
+    related: ["brew install", "brew info"]
+
+  - name: brew update
+    summary: "更新 Homebrew 和软件包信息"
+    examples:
+      - description: "更新 Homebrew"
+        code: "brew update"
+      - description: "升级所有已安装的包"
+        code: "brew upgrade"
+      - description: "升级指定包"
+        code: "brew upgrade python"
+    tips:
+      - "brew update 更新源信息, brew upgrade 升级软件"
+    related: ["brew outdated", "brew cleanup"]
+
+  - name: brew list
+    summary: "列出已安装的软件包"
+    examples:
+      - description: "列出所有包"
+        code: "brew list"
+      - description: "列出 cask 应用"
+        code: "brew list --cask"
+      - description: "查看包安装的文件"
+        code: "brew list wget"
+    tips:
+      - "brew leaves 列出顶层依赖包（非依赖安装的）"
+    related: ["brew info", "brew deps"]
+
+  - name: brew info
+    summary: "查看软件包详细信息"
+    examples:
+      - description: "查看包信息"
+        code: "brew info python"
+      - description: "查看 cask 信息"
+        code: "brew info --cask google-chrome"
+    tips:
+      - "显示版本、依赖、安装路径等信息"
+    related: ["brew search", "brew deps"]
+
+  - name: brew cleanup
+    summary: "清理旧版本和缓存"
+    examples:
+      - description: "清理所有旧版本"
+        code: "brew cleanup"
+      - description: "清理指定包"
+        code: "brew cleanup python"
+      - description: "预览会清理什么（不实际执行）"
+        code: "brew cleanup -n"
+    tips:
+      - "定期执行可释放磁盘空间"
+    related: ["brew prune", "brew doctor"]

@@ -1,0 +1,112 @@
+category: "系统工具"
+description: "macOS 特有的系统工具命令"
+platform: mac
+commands:
+  - name: pbcopy
+    summary: "将标准输入复制到剪贴板"
+    examples:
+      - description: "复制文件内容到剪贴板"
+        code: "cat file.txt | pbcopy"
+      - description: "复制命令输出到剪贴板"
+        code: "echo 'hello' | pbcopy"
+      - description: "复制 SSH 公钥"
+        code: "cat ~/.ssh/id_rsa.pub | pbcopy"
+    tips:
+      - "与 Linux 的 xclip 类似"
+    related: ["pbpaste", "xclip"]
+
+  - name: pbpaste
+    summary: "将剪贴板内容输出到标准输出"
+    examples:
+      - description: "粘贴剪贴板到文件"
+        code: "pbpaste > output.txt"
+      - description: "搜索剪贴板内容"
+        code: "pbpaste | grep 'pattern'"
+    tips:
+      - "pbcopy 和 pbpaste 常配合使用"
+    related: ["pbcopy"]
+
+  - name: open
+    summary: "打开文件、目录或 URL"
+    examples:
+      - description: "打开当前目录（Finder）"
+        code: "open ."
+      - description: "打开 URL"
+        code: "open https://example.com"
+      - description: "用指定应用打开文件"
+        code: "open -a 'Visual Studio Code' file.txt"
+      - description: "用默认应用打开文件"
+        code: "open file.pdf"
+    tips:
+      - "-a 指定应用程序名称"
+      - "-R 在 Finder 中显示（而非打开）"
+    related: ["xdg-open (Linux)", "start (Windows)"]
+
+  - name: mdfind
+    summary: "Spotlight 搜索引擎命令行版"
+    examples:
+      - description: "搜索文件名"
+        code: "mdfind -name 'report.pdf'"
+      - description: "搜索文件内容"
+        code: "mdfind 'keyword'"
+      - description: "在指定目录搜索"
+        code: "mdfind -onlyin ~/Documents 'keyword'"
+    tips:
+      - "比 find 更快，使用 Spotlight 索引"
+    related: ["find", "mdls", "spotlight"]
+
+  - name: defaults
+    summary: "读写 macOS 系统偏好设置"
+    examples:
+      - description: "显示隐藏文件"
+        code: "defaults write com.apple.finder AppleShowAllFiles -bool true"
+      - description: "禁用 Dashboard"
+        code: "defaults write com.apple.dashboard mcx-disabled -bool true"
+      - description: "读取设置"
+        code: "defaults read com.apple.finder"
+    tips:
+      - "修改后通常需要 killall Finder 使其生效"
+    related: ["killall", "System Preferences"]
+
+  - name: diskutil
+    summary: "磁盘管理工具"
+    examples:
+      - description: "列出所有磁盘"
+        code: "diskutil list"
+      - description: "查看磁盘信息"
+        code: "diskutil info disk1"
+      - description: "挂载磁盘"
+        code: "diskutil mount disk2s1"
+      - description: "修复磁盘"
+        code: "diskutil verifyVolume disk1"
+    tips:
+      - "diskutil 是 macOS 专属命令"
+    related: ["mount", "fsck", "df"]
+
+  - name: networksetup
+    summary: "网络配置工具"
+    examples:
+      - description: "列出所有网络服务"
+        code: "networksetup -listallnetworkservices"
+      - description: "查看 Wi-Fi 信息"
+        code: "networksetup -getinfo Wi-Fi"
+      - description: "设置 DNS"
+        code: "networksetup -setdnsservers Wi-Fi 8.8.8.8 8.8.4.4"
+      - description: "设置 HTTP 代理"
+        code: "networksetup -setwebproxy Wi-Fi proxy.example.com 8080"
+    tips:
+      - "macOS 专属命令"
+    related: ["ifconfig", "scutil", "networkQuality"]
+
+  - name: say
+    summary: "文字转语音"
+    examples:
+      - description: "朗读文本"
+        code: "say 'Hello World'"
+      - description: "指定语音"
+        code: "say -v Ting-Ting '你好世界'"
+      - description: "输出到文件"
+        code: "say -o output.aiff 'Hello'"
+    tips:
+      - "-v 选择语音，支持多种语言"
+    related: ["afplay", "afinfo"]

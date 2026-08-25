@@ -1,0 +1,157 @@
+category: "文件操作"
+description: "Linux 文件和目录操作常用命令"
+platform: linux
+commands:
+  - name: cp
+    summary: "复制文件或目录"
+    examples:
+      - description: "复制文件"
+        code: "cp source.txt dest.txt"
+      - description: "递归复制目录"
+        code: "cp -r src_dir/ dest_dir/"
+      - description: "保留属性复制（归档模式）"
+        code: "cp -a source/ dest/"
+      - description: "交互式复制，覆盖前确认"
+        code: "cp -i source.txt dest.txt"
+    tips:
+      - "数字模式: -a 等同于 -dR --preserve=all"
+      - "-u 仅复制目标不存在或更新的文件"
+    related: ["mv", "rsync", "ln"]
+
+  - name: mv
+    summary: "移动或重命名文件和目录"
+    examples:
+      - description: "重命名文件"
+        code: "mv old_name.txt new_name.txt"
+      - description: "移动文件到目录"
+        code: "mv file.txt /target/dir/"
+      - description: "交互式移动，覆盖前确认"
+        code: "mv -i source.txt dest.txt"
+      - description: "批量移动匹配文件"
+        code: "mv *.log /var/log/archive/"
+    tips:
+      - "mv 不会提示覆盖，除非加 -i"
+      - "-n 不覆盖已存在的目标文件"
+    related: ["cp", "rename", "find"]
+
+  - name: rm
+    summary: "删除文件或目录"
+    examples:
+      - description: "删除文件"
+        code: "rm file.txt"
+      - description: "递归删除目录"
+        code: "rm -rf dir/"
+      - description: "交互式删除"
+        code: "rm -i file.txt"
+      - description: "删除空目录"
+        code: "rm -d empty_dir"
+    tips:
+      - "rm -rf 非常危险，务必确认路径"
+      - "删除前建议先 ls 确认目标"
+    related: ["rmdir", "unlink", "find"]
+
+  - name: ls
+    summary: "列出目录内容"
+    examples:
+      - description: "显示详细信息"
+        code: "ls -la"
+      - description: "按时间排序"
+        code: "ls -lt"
+      - description: "按大小排序"
+        code: "ls -lS"
+      - description: "显示人类可读的文件大小"
+        code: "ls -lh"
+      - description: "递归列出子目录"
+        code: "ls -R"
+    tips:
+      - "ls --color=auto 给不同类型文件着色"
+      - "-A 显示隐藏文件，但不显示 . 和 .."
+    related: ["find", "tree", "stat"]
+
+  - name: chmod
+    summary: "修改文件或目录权限"
+    examples:
+      - description: "设置为 rwxr-xr-x"
+        code: "chmod 755 file.sh"
+      - description: "添加执行权限"
+        code: "chmod +x script.sh"
+      - description: "递归修改目录权限"
+        code: "chmod -R 644 dir/"
+      - description: "移除组的写权限"
+        code: "chmod g-w file.txt"
+    tips:
+      - "数字模式: r=4, w=2, x=1"
+      - "755 = rwxr-xr-x, 644 = rw-r--r--"
+    related: ["chown", "umask", "chgrp"]
+
+  - name: chown
+    summary: "修改文件或目录的所有者"
+    examples:
+      - description: "修改文件所有者"
+        code: "chown user file.txt"
+      - description: "修改所有者和组"
+        code: "chown user:group file.txt"
+      - description: "递归修改目录所有权"
+        code: "chown -R user:group dir/"
+    tips:
+      - "需要 root 权限才能修改所有者"
+      - "-h 修改符号链接本身而非目标"
+    related: ["chmod", "chgrp", "id"]
+
+  - name: ln
+    summary: "创建链接（硬链接或符号链接）"
+    examples:
+      - description: "创建符号链接（软链接）"
+        code: "ln -s target.txt link.txt"
+      - description: "创建硬链接"
+        code: "ln target.txt link.txt"
+      - description: "强制覆盖已有链接"
+        code: "ln -sf target.txt link.txt"
+    tips:
+      - "软链接可以跨文件系统，硬链接不行"
+      - "ln -sfn 用于更新已存在的符号链接"
+    related: ["cp", "mv", "readlink"]
+
+  - name: find
+    summary: "在目录树中搜索文件"
+    examples:
+      - description: "按名称查找"
+        code: "find /path -name '*.log'"
+      - description: "按类型查找（文件/目录）"
+        code: "find /path -type f -name '*.txt'"
+      - description: "按大小查找（大于100M）"
+        code: "find /path -size +100M"
+      - description: "查找并执行命令"
+        code: "find /path -name '*.tmp' -delete"
+      - description: "按修改时间查找（7天内）"
+        code: "find /path -mtime -7"
+    tips:
+      - "-iname 忽略大小写"
+      - "-exec cmd {} \\; 对每个结果执行命令"
+    related: ["locate", "grep", "xargs"]
+
+  - name: mkdir
+    summary: "创建目录"
+    examples:
+      - description: "创建目录"
+        code: "mkdir new_dir"
+      - description: "递归创建多级目录"
+        code: "mkdir -p a/b/c"
+      - description: "创建并设置权限"
+        code: "mkdir -m 755 new_dir"
+    tips:
+      - "-p 自动创建不存在的父目录"
+    related: ["rmdir", "install", "touch"]
+
+  - name: touch
+    summary: "创建空文件或更新文件时间戳"
+    examples:
+      - description: "创建空文件"
+        code: "touch new_file.txt"
+      - description: "更新文件时间戳"
+        code: "touch existing_file.txt"
+      - description: "设置指定时间"
+        code: "touch -t 202401011200 file.txt"
+    tips:
+      - "如果文件存在则更新时间戳，不存在则创建"
+    related: ["mkdir", "stat", "date"]

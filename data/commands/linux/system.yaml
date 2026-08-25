@@ -1,0 +1,83 @@
+category: "系统信息"
+description: "Linux 系统状态查看和诊断命令"
+platform: linux
+commands:
+  - name: df
+    summary: "查看磁盘空间使用情况"
+    examples:
+      - description: "显示人类可读格式"
+        code: "df -h"
+      - description: "显示 inode 使用"
+        code: "df -i"
+      - description: "只显示特定文件系统"
+        code: "df -hT | grep ext4"
+    tips:
+      - "-h 显示 K/M/G, -T 显示文件系统类型"
+    related: ["du", "mount", "lsblk"]
+
+  - name: du
+    summary: "查看文件和目录的磁盘使用"
+    examples:
+      - description: "查看目录大小"
+        code: "du -sh dir/"
+      - description: "查看一级子目录大小"
+        code: "du -sh dir/*"
+      - description: "按大小排序"
+        code: "du -sh dir/* | sort -rh"
+      - description: "查看最深的目录层级"
+        code: "du --max-depth=2 -h dir/"
+    tips:
+      - "du -sh 是查看目录总大小最常用的方式"
+    related: ["df", "ncdu", "find"]
+
+  - name: free
+    summary: "查看内存使用情况"
+    examples:
+      - description: "人类可读格式"
+        code: "free -h"
+      - description: "持续监控（每秒刷新）"
+        code: "free -h -s 1"
+    tips:
+      - "关注 available 列而非 free 列"
+    related: ["top", "vmstat", "cat /proc/meminfo"]
+
+  - name: uname
+    summary: "显示系统信息"
+    examples:
+      - description: "显示所有信息"
+        code: "uname -a"
+      - description: "显示内核版本"
+        code: "uname -r"
+      - description: "显示系统架构"
+        code: "uname -m"
+    tips:
+      - "cat /etc/os-release 查看发行版信息"
+    related: ["lsb_release", "hostname", "arch"]
+
+  - name: lsof
+    summary: "列出打开的文件（包括网络连接）"
+    examples:
+      - description: "查看端口占用"
+        code: "lsof -i :8080"
+      - description: "查看用户打开的文件"
+        code: "lsof -u username"
+      - description: "查看进程打开的文件"
+        code: "lsof -p 1234"
+      - description: "查看谁在使用某个文件"
+        code: "lsof /path/to/file"
+    tips:
+      - "lsof -i -P -n 查看所有网络连接"
+    related: ["fuser", "netstat", "ss"]
+
+  - name: strace
+    summary: "跟踪系统调用和信号"
+    examples:
+      - description: "跟踪命令的系统调用"
+        code: "strace ls -la"
+      - description: "跟踪运行中的进程"
+        code: "strace -p 1234"
+      - description: "过滤特定系统调用"
+        code: "strace -e open,read ls"
+    tips:
+      - "strace -c 统计各系统调用的次数和时间"
+    related: ["ltrace", "dtrace", "perf"]

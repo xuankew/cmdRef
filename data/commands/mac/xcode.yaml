@@ -1,0 +1,48 @@
+category: "Xcode"
+description: "macOS Xcode 开发工具相关命令"
+platform: mac
+commands:
+  - name: xcodebuild
+    summary: "Xcode 项目构建命令行工具"
+    examples:
+      - description: "构建项目"
+        code: "xcodebuild -project MyApp.xcodeproj -scheme MyScheme"
+      - description: "构建 workspace"
+        code: "xcodebuild -workspace MyApp.xcworkspace -scheme MyScheme"
+      - description: "清理构建"
+        code: "xcodebuild clean -project MyApp.xcodeproj -scheme MyScheme"
+      - description: "列出所有 scheme"
+        code: "xcodebuild -list"
+      - description: "构建并运行测试"
+        code: "xcodebuild test -workspace MyApp.xcworkspace -scheme MyScheme -destination 'platform=iOS Simulator,name=iPhone 15'"
+    tips:
+      - "需要安装 Xcode Command Line Tools"
+    related: ["xcrun", "xcode-select", "swift"]
+
+  - name: xcrun
+    summary: "运行 Xcode 开发工具"
+    examples:
+      - description: "运行 swift 编译器"
+        code: "xcrun swift file.swift"
+      - description: "管理模拟器"
+        code: "xcrun simctl list"
+      - description: "启动模拟器"
+        code: "xcrun simctl boot 'iPhone 15'"
+      - description: "安装 app 到模拟器"
+        code: "xcrun simctl install booted MyApp.app"
+    tips:
+      - "xcrun simctl 是管理 iOS 模拟器的主要工具"
+    related: ["xcodebuild", "simctl", "instruments"]
+
+  - name: xcode-select
+    summary: "管理 Xcode Command Line Tools"
+    examples:
+      - description: "安装 Command Line Tools"
+        code: "xcode-select --install"
+      - description: "查看当前路径"
+        code: "xcode-select --print-path"
+      - description: "切换到完整 Xcode"
+        code: "sudo xcode-select -s /Applications/Xcode.app/Contents/Developer"
+    tips:
+      - "安装 Git 时会自动触发安装 Command Line Tools"
+    related: ["xcodebuild", "xcrun"]

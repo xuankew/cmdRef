@@ -1,0 +1,110 @@
+category: "PowerShell"
+description: "Windows PowerShell 常用命令"
+platform: windows
+commands:
+  - name: Get-ChildItem
+    summary: "列出目录内容（对应 ls/dir）"
+    examples:
+      - description: "列出当前目录"
+        code: "Get-ChildItem"
+      - description: "显示隐藏文件"
+        code: "Get-ChildItem -Force"
+      - description: "递归列出"
+        code: "Get-ChildItem -Recurse"
+      - description: "按扩展名过滤"
+        code: "Get-ChildItem -Filter *.txt"
+    tips:
+      - "别名: ls, dir, gci"
+    related: ["Get-Item", "Test-Path"]
+
+  - name: Get-Process
+    summary: "查看运行中的进程（对应 ps）"
+    examples:
+      - description: "查看所有进程"
+        code: "Get-Process"
+      - description: "按名称查找"
+        code: "Get-Process -Name chrome"
+      - description: "按 CPU 排序"
+        code: "Get-Process | Sort-Object CPU -Descending | Select-Object -First 10"
+    tips:
+      - "别名: gps, ps"
+    related: ["Stop-Process", "Get-Service"]
+
+  - name: Select-String
+    summary: "在文件中搜索文本（对应 grep）"
+    examples:
+      - description: "搜索文件"
+        code: "Select-String -Pattern 'error' -Path *.log"
+      - description: "忽略大小写"
+        code: "Select-String -Pattern 'error' -Path *.log -CaseSensitive:$false"
+      - description: "管道搜索"
+        code: "Get-Content file.txt | Select-String 'pattern'"
+    tips:
+      - "别名: sls"
+    related: ["Get-Content", "Where-Object"]
+
+  - name: Out-File
+    summary: "将输出写入文件（对应 >）"
+    examples:
+      - description: "输出到文件"
+        code: "Get-Process | Out-File -FilePath output.txt"
+      - description: "追加到文件"
+        code: "Get-Process | Out-File -FilePath output.txt -Append"
+      - description: "指定编码"
+        code: "'hello' | Out-File -FilePath out.txt -Encoding utf8"
+    tips:
+      - "别名: > 和 >>"
+    related: ["Set-Content", "Add-Content"]
+
+  - name: Invoke-WebRequest
+    summary: "发送 HTTP 请求（对应 curl）"
+    examples:
+      - description: "GET 请求"
+        code: "Invoke-WebRequest -Uri 'https://api.example.com/data'"
+      - description: "POST JSON"
+        code: "Invoke-WebRequest -Uri $url -Method POST -ContentType 'application/json' -Body '{\"key\":\"value\"}'"
+      - description: "下载文件"
+        code: "Invoke-WebRequest -Uri $url -OutFile file.zip"
+    tips:
+      - "别名: iwr, wget, curl"
+      - "PowerShell 7 中 curl 指向 Invoke-WebRequest"
+    related: ["Invoke-RestMethod", "Start-BitsTransfer"]
+
+  - name: Stop-Process
+    summary: "终止进程（对应 kill）"
+    examples:
+      - description: "按 PID 终止"
+        code: "Stop-Process -Id 1234"
+      - description: "按名称终止"
+        code: "Stop-Process -Name notepad"
+      - description: "强制终止"
+        code: "Stop-Process -Name chrome -Force"
+    tips:
+      - "别名: kill, spps"
+    related: ["Get-Process", "taskkill"]
+
+  - name: Copy-Item
+    summary: "复制文件或目录（对应 cp）"
+    examples:
+      - description: "复制文件"
+        code: "Copy-Item source.txt dest.txt"
+      - description: "递归复制目录"
+        code: "Copy-Item -Path src_dir -Destination dest_dir -Recurse"
+      - description: "强制覆盖"
+        code: "Copy-Item source.txt dest.txt -Force"
+    tips:
+      - "别名: cp, copy, cpi"
+    related: ["Move-Item", "Remove-Item"]
+
+  - name: Remove-Item
+    summary: "删除文件或目录（对应 rm）"
+    examples:
+      - description: "删除文件"
+        code: "Remove-Item file.txt"
+      - description: "递归删除目录"
+        code: "Remove-Item dir -Recurse -Force"
+      - description: "交互式删除"
+        code: "Remove-Item file.txt -Confirm"
+    tips:
+      - "别名: rm, del, ri"
+    related: ["Copy-Item", "Move-Item"]

@@ -1,0 +1,92 @@
+category: "iOS"
+description: "iOS 开发和测试命令"
+platform: testing
+commands:
+  - name: xcrun simctl
+    summary: "管理 iOS 模拟器"
+    examples:
+      - description: "列出所有模拟器"
+        code: "xcrun simctl list"
+      - description: "启动模拟器"
+        code: "xcrun simctl boot 'iPhone 15'"
+      - description: "关闭模拟器"
+        code: "xcrun simctl shutdown 'iPhone 15'"
+      - description: "安装 app 到模拟器"
+        code: "xcrun simctl install booted MyApp.app"
+      - description: "启动 app"
+        code: "xcrun simctl launch booted com.example.myapp"
+      - description: "截图"
+        code: "xcrun simctl io booted screenshot screenshot.png"
+      - description: "录屏"
+        code: "xcrun simctl io booted recordVideo video.mp4"
+      - description: "打开 URL"
+        code: "xcrun simctl openurl booted 'https://example.com'"
+    tips:
+      - "booted 代表当前启动的模拟器"
+      - "xcrun simctl erase all 重置所有模拟器"
+    related: ["xcodebuild", "instruments"]
+
+  - name: idevicediagnostics
+    summary: "iOS 真机诊断工具（需安装 libimobiledevice）"
+    examples:
+      - description: "重启设备"
+        code: "idevicediagnostics restart"
+      - description: "关机"
+        code: "idevicediagnostics shutdown"
+      - description: "进入恢复模式"
+        code: "idevicediagnostics enterrecovery"
+    tips:
+      - "需要 brew install libimobiledevice"
+    related: ["ideviceinfo", "idevicesyslog"]
+
+  - name: ios-deploy
+    summary: "部署 app 到 iOS 真机"
+    examples:
+      - description: "安装并启动 app"
+        code: "ios-deploy --bundle MyApp.app"
+      - description: "安装并附加调试器"
+        code: "ios-deploy --bundle MyApp.app --justlaunch"
+      - description: "安装并等待调试"
+        code: "ios-deploy --bundle MyApp.app --debug"
+    tips:
+      - "需要 npm install -g ios-deploy"
+    related: ["xcodebuild", "xcrun"]
+
+  - name: ideviceinfo
+    summary: "查看 iOS 设备信息"
+    examples:
+      - description: "显示所有信息"
+        code: "ideviceinfo"
+      - description: "显示特定域信息"
+        code: "ideviceinfo -d com.apple.disk_usage"
+      - description: "显示 UDID"
+        code: "ideviceinfo -k UniqueDeviceID"
+    tips:
+      - "需要 brew install libimobiledevice"
+    related: ["idevicediagnostics", "idevicesyslog"]
+
+  - name: idevicesyslog
+    summary: "查看 iOS 真机系统日志"
+    examples:
+      - description: "实时查看日志"
+        code: "idevicesyslog"
+      - description: "过滤关键字"
+        code: "idevicesyslog | grep 'keyword'"
+      - description: "输出到文件"
+        code: "idevicesyslog > device_log.txt"
+    tips:
+      - "需要 brew install libimobiledevice"
+    related: ["ideviceinfo", "adb logcat"]
+
+  - name: ideviceinstaller
+    summary: "管理 iOS 真机上的应用"
+    examples:
+      - description: "安装应用"
+        code: "ideviceinstaller -i MyApp.ipa"
+      - description: "卸载应用"
+        code: "ideviceinstaller -U com.example.myapp"
+      - description: "列出已安装应用"
+        code: "ideviceinstaller -l"
+    tips:
+      - "需要 brew install ideviceinstaller"
+    related: ["ios-deploy", "ideviceinfo"]

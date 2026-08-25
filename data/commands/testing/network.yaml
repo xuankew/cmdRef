@@ -1,0 +1,88 @@
+category: "网络测试"
+description: "软件测试中常用的网络诊断和调试命令"
+platform: testing
+commands:
+  - name: tcpdump
+    summary: "网络抓包工具"
+    examples:
+      - description: "抓取所有接口的流量"
+        code: "sudo tcpdump -i any"
+      - description: "抓取指定端口"
+        code: "sudo tcpdump -i any port 80"
+      - description: "保存到文件"
+        code: "sudo tcpdump -i any -w capture.pcap"
+      - description: "读取 pcap 文件"
+        code: "tcpdump -r capture.pcap"
+      - description: "抓取 HTTP 请求"
+        code: "sudo tcpdump -i any -A -s 0 'tcp port 80'"
+    tips:
+      - "抓取的 pcap 文件可用 Wireshark 分析"
+    related: ["wireshark", "tshark", "ngrep"]
+
+  - name: ping
+    summary: "测试网络连通性和延迟"
+    examples:
+      - description: "测试连通性"
+        code: "ping google.com"
+      - description: "指定次数"
+        code: "ping -c 10 google.com"
+      - description: "持续 ping"
+        code: "ping -t google.com"
+    tips:
+      - "Windows 默认 ping 4 次, Linux 持续 ping"
+    related: ["traceroute", "mtr", "hping3"]
+
+  - name: traceroute
+    summary: "追踪网络路由路径"
+    examples:
+      - description: "追踪到目标的路由"
+        code: "traceroute google.com"
+      - description: "不解析域名（更快）"
+        code: "traceroute -n google.com"
+    tips:
+      - "Windows 命令为 tracert"
+      - "mtr 结合了 ping 和 traceroute"
+    related: ["ping", "mtr", "pathping"]
+
+  - name: nslookup
+    summary: "DNS 查询工具"
+    examples:
+      - description: "查询域名"
+        code: "nslookup example.com"
+      - description: "查询指定记录类型"
+        code: "nslookup -type=MX example.com"
+      - description: "使用指定 DNS 服务器"
+        code: "nslookup example.com 8.8.8.8"
+    tips:
+      - "dig 功能更强大"
+    related: ["dig", "host", "ping"]
+
+  - name: nc
+    summary: "netcat - 网络瑞士军刀"
+    examples:
+      - description: "测试端口连通性"
+        code: "nc -zv host 8080"
+      - description: "发送 HTTP 请求"
+        code: "echo -e 'GET / HTTP/1.0\\r\\nHost: example.com\\r\\n\\r\\n' | nc example.com 80"
+      - description: "启动简单 TCP 服务"
+        code: "nc -l 8080"
+      - description: "文件传输（接收端）"
+        code: "nc -l 9999 > received_file"
+    tips:
+      - "nc -zv 是最快的端口连通性测试方法"
+    related: ["telnet", "curl", "socat"]
+
+  - name: tshark
+    summary: "Wireshark 命令行版本"
+    examples:
+      - description: "实时抓包"
+        code: "tshark -i any"
+      - description: "抓包并过滤"
+        code: "tshark -i any -f 'port 80'"
+      - description: "读取 pcap 文件"
+        code: "tshark -r capture.pcap"
+      - description: "提取 HTTP URL"
+        code: "tshark -r capture.pcap -Y http.request -T fields -e http.host -e http.request.uri"
+    tips:
+      - "tshark 是 Wireshark 的命令行版本"
+    related: ["tcpdump", "wireshark", "ngrep"]

@@ -1,0 +1,135 @@
+#!/bin/bash
+# CmdRef 发布辅助脚本
+# 用法: ./scripts/release.sh <version>
+# 示例: ./scripts/release.sh 0.1.0
+#
+# 前置条件:
+#   1. GitHub Release 已创建并且 CI 已完成编译
+#   2. 已安装 cargo (用于 crates.io 发布)
+#
+# 本脚本会:
+#   - 从 GitHub Release 下载各平台二进制文件
+#   - 计算 SHA256 校验值
+#   - 更新 brew Formula 和 scoop manifest
+#   - 提示后续手动步骤
+
+set -euo pipefail
+
+VERSION="${1:-}"
+REPO="xuanke/command-tool"
+
+if [ -z "$VERSION" ]; then
+    echo "Usage: ./scripts/release.sh <version>"
+    echo "Example: ./scripts/release.sh 0.1.0"
+    exit 1
+fi
+
+VERSION="${VERSION#v}"
+BASE_URL="https://github.com/${REPO}/releases/download/v${VERSION}"
+TEMP_DIR=$(mktemp -d)
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+PROJECT_DIR="$(dirname "$SCRIPT_DIR")"
+
+echo "=========================================="
+echo "  CmdRef Release Helper v${VERSION}"
+echo "=========================================="
+echo ""
+
+# 下载各平台二进制文件并计算 SHA256
+declare -A HASHES
+
+download_and_hash() {
+    local name="$1"
+    local url="${BASE_URL}/${name}"
+    local file="${TEMP_DIR}/${name}"
+
+    echo -n "  Downloading ${name}... "
+    if curl -fsSL -o "$file" "$url" 2>/dev/null; then
+        HASHES["$name"]=$(shasum -a 256 "$file" | awk '{print $1}')
+        echo "OK (SHA256: ${HASHES[$name]:0:16}...)"
+    else
+        echo "FAILED"
+        echo "  Warning: Could not download ${name}"
+        HASHES["$name"]="SHA256_NOT_AVAILABLE"
+    fi
+}
+
+echo "[1/3] Downloading release binaries and computing SHA256..."
+echo ""
+download_and_hash "cmdref-macos-aarch64"
+download_and_hash "cmdref-macos-x86_64"
+download_and_hash "cmdref-linux-aarch64"
+download_and_hash "cmdref-linux-x86_64"
+download_and_hash "cmdref.exe"
+echo ""
+
+# 更新 Homebrew Formula
+echo "[2/3] Updating Homebrew Formula..."
+FORMULA_FILE="${PROJECT_DIR}/brew/cmdref.rb"
+
+sed -i.bak \
+    -e "s|version \".*\"|version \"${VERSION}\"|" \
+    -e "s|releases/download/v[^\"]*|releases/download/v${VERSION}|g" \
+    -e "s|SHA256_PLACEHOLDER_MACOS_AARCH64|${HASHES[cmdref-macos-aarch64]}|" \
+    -e "s|SHA256_PLACEHOLDER_MACOS_X86_64|${HASHES[cmdref-macos-x86_64]}|" \
+    -e "s|SHA256_PLACEHOLDER_LINUX_AARCH64|${HASHES[cmdref-linux-aarch64]}|" \
+    -e "s|SHA256_PLACEHOLDER_LINUX_X86_64|${HASHES[cmdref-linux-x86_64]}|" \
+    "$FORMULA_FILE"
+rm -f "${FORMULA_FILE}.bak"
+echo "  Updated: ${FORMULA_FILE}"
+echo ""
+
+# 更新 Scoop manifest
+echo "[3/3] Updating Scoop manifest..."
+MANIFEST_FILE="${PROJECT_DIR}/brew/cmdref.json"
+
+# Use python3 for JSON manipulation (available on most systems)
+python3 -c "
+import json, sys
+with open('${MANIFEST_FILE}', 'r') as f:
+    data = json.load(f)
+data['version'] = '${VERSION}'
+data['architecture']['64bit']['url'] = '${BASE_URL}/cmdref.exe'
+data['architecture']['64bit']['hash'] = '${HASHES[cmdref.exe]}'
+data['autoupdate']['architecture']['64bit']['url'] = 'https://github.com/${REPO}/releases/download/v\$version/cmdref.exe'
+with open('${MANIFEST_FILE}', 'w') as f:
+    json.dump(data, f, indent=4)
+    f.write('\n')
+"
+echo "  Updated: ${MANIFEST_FILE}"
+echo ""
+
+# 清理
+rm -rf "$TEMP_DIR"
+
+# 输出后续步骤
+echo "=========================================="
+echo "  后续步骤"
+echo "=========================================="
+echo ""
+echo "1. 更新 Cargo.toml 中的版本号:"
+echo "   version = \"${VERSION}\""
+echo ""
+echo "2. 提交并推送更改:"
+echo "   git add -A && git commit -m 'release v${VERSION}'"
+echo "   git tag v${VERSION}"
+echo "   git push origin main --tags"
+echo ""
+echo "3. 发布到 crates.io:"
+echo "   cargo publish"
+echo ""
+echo "4. Homebrew (将 brew/cmdref.rb 复制到 homebrew-cmdref 仓库):"
+echo "   # 如果还没有 tap 仓库，先在 GitHub 创建 xuanke/homebrew-cmdref"
+echo "   cp brew/cmdref.rb /tmp/cmdref.rb"
+echo "   git clone git@github.com:xuanke/homebrew-cmdref.git /tmp/homebrew-cmdref"
+echo "   cp /tmp/cmdref.rb /tmp/homebrew-cmdref/cmdref.rb"
+echo "   cd /tmp/homebrew-cmdref && git add . && git commit -m 'v${VERSION}' && git push"
+echo ""
+echo "   用户安装: brew tap xuanke/cmdref && brew install cmdref"
+echo ""
+echo "5. Scoop (将 brew/cmdref.json 推送到 bucket 仓库):"
+echo "   # 类似地，创建一个 GitHub 仓库 xuanke/scoop-bucket"
+echo "   # 用户安装: scoop bucket add xuanke https://github.com/xuanke/scoop-bucket"
+echo "   #           scoop install cmdref"
+echo ""
+echo "Done!"

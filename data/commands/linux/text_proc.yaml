@@ -1,0 +1,153 @@
+category: "文本处理"
+description: "Linux 文本搜索、处理和统计命令"
+platform: linux
+commands:
+  - name: grep
+    summary: "在文件中搜索匹配模式的行"
+    examples:
+      - description: "搜索关键字"
+        code: "grep 'pattern' file.txt"
+      - description: "忽略大小写搜索"
+        code: "grep -i 'pattern' file.txt"
+      - description: "递归搜索目录"
+        code: "grep -r 'pattern' dir/"
+      - description: "显示行号"
+        code: "grep -n 'pattern' file.txt"
+      - description: "反向匹配（排除）"
+        code: "grep -v 'pattern' file.txt"
+      - description: "统计匹配行数"
+        code: "grep -c 'pattern' file.txt"
+    tips:
+      - "grep -E 使用扩展正则表达式"
+      - "grep -F 搜索固定字符串（不解析正则）"
+    related: ["sed", "awk", "find"]
+
+  - name: sed
+    summary: "流编辑器，用于文本替换和转换"
+    examples:
+      - description: "替换文本"
+        code: "sed 's/old/new/g' file.txt"
+      - description: "原地修改文件"
+        code: "sed -i 's/old/new/g' file.txt"
+      - description: "删除匹配行"
+        code: "sed '/pattern/d' file.txt"
+      - description: "删除指定行号"
+        code: "sed '3d' file.txt"
+      - description: "打印第5到10行"
+        code: "sed -n '5,10p' file.txt"
+      - description: "在匹配行后插入文本"
+        code: "sed '/pattern/a\\new line' file.txt"
+    tips:
+      - "macOS 的 sed -i 需要指定备份后缀: sed -i '' 's/old/new/g'"
+      - "sed -n 配合 p 只打印匹配行"
+    related: ["awk", "grep", "tr"]
+
+  - name: awk
+    summary: "强大的文本分析和处理工具"
+    examples:
+      - description: "打印指定列"
+        code: "awk '{print $1, $3}' file.txt"
+      - description: "以冒号分隔打印"
+        code: "awk -F: '{print $1}' /etc/passwd"
+      - description: "打印行号和内容"
+        code: "awk '{print NR, $0}' file.txt"
+      - description: "求和"
+        code: "awk '{sum += $1} END {print sum}' file.txt"
+      - description: "过滤长度大于80的行"
+        code: "awk 'length > 80' file.txt"
+    tips:
+      - "awk 默认以空格分隔字段"
+      - "BEGIN/END 块在处理前后执行"
+    related: ["sed", "cut", "sort"]
+
+  - name: sort
+    summary: "对文本行排序"
+    examples:
+      - description: "字母序排序"
+        code: "sort file.txt"
+      - description: "数值排序"
+        code: "sort -n file.txt"
+      - description: "逆序排序"
+        code: "sort -r file.txt"
+      - description: "按指定列排序"
+        code: "sort -k2 -t, file.csv"
+      - description: "去重排序"
+        code: "sort -u file.txt"
+    tips:
+      - "-h 支持人类可读的数字 (1K, 2M)"
+      - "-V 版本排序 (v1.2 < v1.10)"
+    related: ["uniq", "awk", "cut"]
+
+  - name: uniq
+    summary: "去除或统计相邻重复行"
+    examples:
+      - description: "去除相邻重复行"
+        code: "uniq file.txt"
+      - description: "统计重复次数"
+        code: "uniq -c file.txt"
+      - description: "只显示重复行"
+        code: "uniq -d file.txt"
+      - description: "忽略大小写"
+        code: "uniq -i file.txt"
+    tips:
+      - "通常先 sort 再 uniq: sort file.txt | uniq -c"
+    related: ["sort", "comm", "diff"]
+
+  - name: cut
+    summary: "按列切割文本"
+    examples:
+      - description: "取第1和第3列"
+        code: "cut -d',' -f1,3 file.csv"
+      - description: "取字符位置1-10"
+        code: "cut -c1-10 file.txt"
+      - description: "取 /etc/passwd 的用户名"
+        code: "cut -d: -f1 /etc/passwd"
+    tips:
+      - "默认分隔符是 Tab"
+      - "cut -f1,3 配合 --output-delimiter 自定义输出分隔符"
+    related: ["awk", "sed", "paste"]
+
+  - name: wc
+    summary: "统计行数、字数、字节数"
+    examples:
+      - description: "统计行数"
+        code: "wc -l file.txt"
+      - description: "统计字数"
+        code: "wc -w file.txt"
+      - description: "统计字节数"
+        code: "wc -c file.txt"
+      - description: "统计多个文件"
+        code: "wc -l *.txt"
+    tips:
+      - "wc -l 常用于统计命令输出的行数: cmd | wc -l"
+    related: ["cat", "head", "tail"]
+
+  - name: tr
+    summary: "字符转换或删除"
+    examples:
+      - description: "大写转小写"
+        code: "echo 'HELLO' | tr 'A-Z' 'a-z'"
+      - description: "删除指定字符"
+        code: "echo 'hello123' | tr -d '0-9'"
+      - description: "压缩重复字符"
+        code: "echo 'aabbcc' | tr -s 'a-z'"
+      - description: "替换分隔符"
+        code: "echo 'a:b:c' | tr ':' '\\n'"
+    tips:
+      - "tr 只处理单字符，复杂替换用 sed"
+    related: ["sed", "awk", "cut"]
+
+  - name: xargs
+    summary: "从标准输入构建并执行命令"
+    examples:
+      - description: "批量删除找到的文件"
+        code: "find . -name '*.tmp' | xargs rm"
+      - description: "每行一个参数执行"
+        code: "cat urls.txt | xargs -I {} curl -O {}"
+      - description: "限制每次执行的参数数量"
+        code: "find . -name '*.log' | xargs -n 5 rm"
+      - description: "使用 null 分隔（安全处理特殊文件名）"
+        code: "find . -name '*.tmp' -print0 | xargs -0 rm"
+    tips:
+      - "配合 -0 和 find -print0 处理带空格的文件名"
+    related: ["find", "exec", "parallel"]

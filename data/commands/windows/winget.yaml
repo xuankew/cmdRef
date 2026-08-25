@@ -1,0 +1,78 @@
+category: "包管理器"
+description: "Windows 包管理器命令（winget / scoop）"
+platform: windows
+commands:
+  - name: winget install
+    summary: "使用 winget 安装软件"
+    examples:
+      - description: "安装软件"
+        code: "winget install Microsoft.VisualStudioCode"
+      - description: "安装并同意协议"
+        code: "winget install Git.Git --accept-source-agreements --accept-package-agreements"
+      - description: "指定版本安装"
+        code: "winget install Python.Python.3.11 --version 3.11.5"
+    tips:
+      - "Windows 10 1709+ 和 Windows 11 内置"
+    related: ["winget search", "winget list", "winget upgrade"]
+
+  - name: winget search
+    summary: "搜索可用软件包"
+    examples:
+      - description: "搜索软件"
+        code: "winget search python"
+      - description: "按 ID 搜索"
+        code: "winget search --id Microsoft.VisualStudioCode"
+    tips:
+      - "支持模糊搜索"
+    related: ["winget install", "winget show"]
+
+  - name: winget list
+    summary: "列出已安装的软件"
+    examples:
+      - description: "列出所有已安装软件"
+        code: "winget list"
+      - description: "搜索特定软件"
+        code: "winget list python"
+    tips:
+      - "显示名称、版本、来源等信息"
+    related: ["winget search", "winget upgrade"]
+
+  - name: winget upgrade
+    summary: "升级已安装的软件"
+    examples:
+      - description: "查看所有可升级的软件"
+        code: "winget upgrade"
+      - description: "升级指定软件"
+        code: "winget upgrade Microsoft.VisualStudioCode"
+      - description: "升级所有"
+        code: "winget upgrade --all"
+    tips:
+      - "winget upgrade --all 一键升级所有软件"
+    related: ["winget list", "winget install"]
+
+  - name: scoop install
+    summary: "使用 Scoop 安装软件"
+    examples:
+      - description: "安装软件"
+        code: "scoop install git"
+      - description: "安装 bucket 中的软件"
+        code: "scoop install extras/vlc"
+      - description: "搜索软件"
+        code: "scoop search python"
+    tips:
+      - "需要先安装 Scoop: irm get.scoop.sh | iex"
+      - "scoop 安装在用户目录，不需要管理员权限"
+    related: ["scoop update", "scoop list", "scoop uninstall"]
+
+  - name: scoop update
+    summary: "更新 Scoop 和已安装的软件"
+    examples:
+      - description: "更新 Scoop"
+        code: "scoop update"
+      - description: "更新所有软件"
+        code: "scoop update *"
+      - description: "更新指定软件"
+        code: "scoop update git"
+    tips:
+      - "scoop update * 更新所有已安装的软件"
+    related: ["scoop install", "scoop list", "scoop status"]

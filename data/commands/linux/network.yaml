@@ -1,0 +1,114 @@
+category: "网络工具"
+description: "Linux 网络诊断和传输命令"
+platform: linux
+commands:
+  - name: curl
+    summary: "HTTP 客户端，传输数据"
+    examples:
+      - description: "GET 请求"
+        code: "curl https://api.example.com/data"
+      - description: "POST JSON 数据"
+        code: "curl -X POST -H 'Content-Type: application/json' -d '{\"key\":\"value\"}' url"
+      - description: "下载文件"
+        code: "curl -O https://example.com/file.tar.gz"
+      - description: "带认证请求"
+        code: "curl -u user:pass https://api.example.com"
+      - description: "查看响应头"
+        code: "curl -I https://example.com"
+      - description: "跟随重定向"
+        code: "curl -L https://example.com"
+    tips:
+      - "-s 静默模式, -v 详细模式"
+      - "--retry 3 失败重试3次"
+    related: ["wget", "httpie", "jq"]
+
+  - name: wget
+    summary: "下载文件工具"
+    examples:
+      - description: "下载文件"
+        code: "wget https://example.com/file.tar.gz"
+      - description: "下载并指定文件名"
+        code: "wget -O output.tar.gz https://example.com/file.tar.gz"
+      - description: "断点续传"
+        code: "wget -c https://example.com/large_file.zip"
+      - description: "递归下载网站"
+        code: "wget -r -np -k https://example.com/docs/"
+      - description: "后台下载"
+        code: "wget -b https://example.com/large_file.zip"
+    tips:
+      - "-q 静默模式"
+      - "wget 适合大文件下载，支持断点续传"
+    related: ["curl", "aria2c", "axel"]
+
+  - name: ssh
+    summary: "安全远程登录"
+    examples:
+      - description: "连接远程主机"
+        code: "ssh user@host"
+      - description: "指定端口"
+        code: "ssh -p 2222 user@host"
+      - description: "使用密钥连接"
+        code: "ssh -i ~/.ssh/id_rsa user@host"
+      - description: "端口转发"
+        code: "ssh -L 8080:localhost:80 user@host"
+      - description: "执行远程命令"
+        code: "ssh user@host 'ls -la'"
+    tips:
+      - "配置 ~/.ssh/config 简化连接"
+      - "ssh-keygen 生成密钥对"
+    related: ["scp", "rsync", "sftp"]
+
+  - name: scp
+    summary: "通过 SSH 安全复制文件"
+    examples:
+      - description: "上传文件到远程"
+        code: "scp file.txt user@host:/remote/path/"
+      - description: "从远程下载文件"
+        code: "scp user@host:/remote/file.txt ."
+      - description: "递归复制目录"
+        code: "scp -r local_dir/ user@host:/remote/path/"
+    tips:
+      - "-P 指定端口: scp -P 2222 file.txt user@host:/"
+    related: ["rsync", "ssh", "sftp"]
+
+  - name: netstat
+    summary: "显示网络连接和端口信息"
+    examples:
+      - description: "显示所有监听端口"
+        code: "netstat -tlnp"
+      - description: "显示所有连接"
+        code: "netstat -an"
+      - description: "统计连接状态"
+        code: "netstat -an | awk '/ESTABLISHED/ {count++} END {print count}'"
+    tips:
+      - "新系统推荐用 ss 替代 netstat"
+      - "-t=TCP, -u=UDP, -l=监听, -n=数字, -p=进程"
+    related: ["ss", "lsof", "nmap"]
+
+  - name: ping
+    summary: "测试网络连通性"
+    examples:
+      - description: "测试连通性"
+        code: "ping google.com"
+      - description: "发送指定数量的包"
+        code: "ping -c 5 google.com"
+      - description: "指定包大小"
+        code: "ping -s 1024 google.com"
+    tips:
+      - "ping -c 指定次数后自动停止"
+    related: ["traceroute", "mtr", "dig"]
+
+  - name: dig
+    summary: "DNS 查询工具"
+    examples:
+      - description: "查询 A 记录"
+        code: "dig example.com"
+      - description: "查询 MX 记录"
+        code: "dig MX example.com"
+      - description: "指定 DNS 服务器"
+        code: "dig @8.8.8.8 example.com"
+      - description: "简洁输出"
+        code: "dig +short example.com"
+    tips:
+      - "dig 比 nslookup 功能更强大"
+    related: ["nslookup", "host", "ping"]

@@ -1,0 +1,109 @@
+category: "CMD"
+description: "Windows 命令提示符（CMD）常用命令"
+platform: windows
+commands:
+  - name: dir
+    summary: "列出目录内容（对应 Linux ls）"
+    examples:
+      - description: "列出当前目录"
+        code: "dir"
+      - description: "显示隐藏文件"
+        code: "dir /a"
+      - description: "递归列出"
+        code: "dir /s"
+      - description: "按时间排序"
+        code: "dir /od"
+    tips:
+      - "PowerShell 中可用 Get-ChildItem 替代"
+    related: ["tree", "where"]
+
+  - name: copy
+    summary: "复制文件（对应 Linux cp）"
+    examples:
+      - description: "复制文件"
+        code: "copy source.txt dest.txt"
+      - description: "合并文件"
+        code: "copy file1.txt + file2.txt merged.txt"
+    tips:
+      - "xcopy 功能更强大，支持目录复制"
+    related: ["xcopy", "robocopy", "move"]
+
+  - name: xcopy
+    summary: "高级文件复制（支持目录）"
+    examples:
+      - description: "递归复制目录"
+        code: "xcopy src_dir dest_dir /E /I"
+      - description: "复制并保留属性"
+        code: "xcopy src dest /E /K /O /X"
+    tips:
+      - "robocopy 是更现代的替代方案"
+    related: ["copy", "robocopy"]
+
+  - name: taskkill
+    summary: "终止进程（对应 Linux kill）"
+    examples:
+      - description: "按 PID 终止"
+        code: "taskkill /PID 1234"
+      - description: "按名称终止"
+        code: "taskkill /IM notepad.exe"
+      - description: "强制终止"
+        code: "taskkill /IM chrome.exe /F"
+      - description: "终止进程及其子进程"
+        code: "taskkill /IM chrome.exe /F /T"
+    tips:
+      - "/F 强制终止, /T 包含子进程"
+    related: ["tasklist", "wmic"]
+
+  - name: icacls
+    summary: "修改文件权限（对应 Linux chmod）"
+    examples:
+      - description: "授予用户完全控制"
+        code: "icacls file.txt /grant user:F"
+      - description: "递归修改"
+        code: "icacls dir /grant user:F /T"
+      - description: "移除权限"
+        code: "icacls file.txt /remove user"
+    tips:
+      - "F=完全控制, R=读取, W=写入, M=修改"
+    related: ["takeown", "attrib"]
+
+  - name: findstr
+    summary: "在文件中搜索字符串（对应 Linux grep）"
+    examples:
+      - description: "搜索文件"
+        code: "findstr 'pattern' file.txt"
+      - description: "忽略大小写"
+        code: "findstr /i 'pattern' file.txt"
+      - description: "递归搜索"
+        code: "findstr /s /i 'pattern' *.txt"
+    tips:
+      - "功能比 grep 弱，推荐用 PowerShell Select-String"
+    related: ["find", "more"]
+
+  - name: ipconfig
+    summary: "查看和配置网络（对应 Linux ifconfig）"
+    examples:
+      - description: "查看网络配置"
+        code: "ipconfig"
+      - description: "显示详细信息"
+        code: "ipconfig /all"
+      - description: "刷新 DNS 缓存"
+        code: "ipconfig /flushdns"
+      - description: "释放 IP 地址"
+        code: "ipconfig /release"
+    tips:
+      - "ipconfig /flushdns 常用于解决 DNS 问题"
+    related: ["netsh", "nslookup", "ping"]
+
+  - name: netstat
+    summary: "显示网络连接和端口"
+    examples:
+      - description: "显示所有连接和端口"
+        code: "netstat -ano"
+      - description: "查看监听端口"
+        code: "netstat -an | findstr LISTENING"
+      - description: "统计连接"
+        code: "netstat -e"
+    tips:
+      - "-a 所有, -n 数字, -o 显示 PID"
+    related: ["netsh", "tasklist"]

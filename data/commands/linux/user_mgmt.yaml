@@ -1,0 +1,79 @@
+category: "用户管理"
+description: "Linux 用户和权限管理命令"
+platform: linux
+commands:
+  - name: useradd
+    summary: "创建新用户"
+    examples:
+      - description: "创建用户"
+        code: "sudo useradd username"
+      - description: "创建用户并设置家目录"
+        code: "sudo useradd -m username"
+      - description: "创建用户并指定 shell"
+        code: "sudo useradd -m -s /bin/bash username"
+      - description: "创建系统用户"
+        code: "sudo useradd -r -s /usr/sbin/nologin svcuser"
+    tips:
+      - "-m 创建家目录, -G 添加到附加组"
+      - "adduser 是 useradd 的交互式封装"
+    related: ["usermod", "passwd", "groupadd"]
+
+  - name: usermod
+    summary: "修改用户属性"
+    examples:
+      - description: "将用户添加到组"
+        code: "sudo usermod -aG docker username"
+      - description: "修改用户 shell"
+        code: "sudo usermod -s /bin/zsh username"
+      - description: "锁定用户账户"
+        code: "sudo usermod -L username"
+      - description: "解锁用户账户"
+        code: "sudo usermod -U username"
+    tips:
+      - "-aG 追加到附加组（必须配合 -a 使用 -G）"
+    related: ["useradd", "groupmod", "passwd"]
+
+  - name: passwd
+    summary: "修改用户密码"
+    examples:
+      - description: "修改当前用户密码"
+        code: "passwd"
+      - description: "修改指定用户密码"
+        code: "sudo passwd username"
+      - description: "删除用户密码（无密码登录）"
+        code: "sudo passwd -d username"
+      - description: "强制用户下次登录改密码"
+        code: "sudo passwd -e username"
+    tips:
+      - "passwd -S username 查看密码状态"
+    related: ["useradd", "usermod", "chage"]
+
+  - name: su
+    summary: "切换用户身份"
+    examples:
+      - description: "切换到 root"
+        code: "su"
+      - description: "切换到指定用户并加载环境"
+        code: "su - username"
+      - description: "以指定用户身份执行命令"
+        code: "su - username -c 'whoami'"
+    tips:
+      - "su - 加载完整登录环境"
+      - "推荐用 sudo 代替 su"
+    related: ["sudo", "login", "newgrp"]
+
+  - name: sudo
+    summary: "以其他用户（通常是 root）身份执行命令"
+    examples:
+      - description: "以 root 执行命令"
+        code: "sudo apt update"
+      - description: "以指定用户执行"
+        code: "sudo -u www-data command"
+      - description: "切换到 root shell"
+        code: "sudo -i"
+      - description: "编辑 sudoers 文件"
+        code: "sudo visudo"
+    tips:
+      - "sudo -l 查看当前用户的 sudo 权限"
+      - "sudo !! 以 sudo 重新执行上一条命令"
+    related: ["su", "visudo", "doas"]

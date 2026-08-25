@@ -1,0 +1,79 @@
+category: "日志查看"
+description: "Linux 日志查看和分析命令"
+platform: linux
+commands:
+  - name: tail
+    summary: "查看文件末尾内容"
+    examples:
+      - description: "查看最后10行"
+        code: "tail file.log"
+      - description: "查看最后100行"
+        code: "tail -n 100 file.log"
+      - description: "实时跟踪日志（最常用）"
+        code: "tail -f file.log"
+      - description: "实时跟踪多个文件"
+        code: "tail -f file1.log file2.log"
+      - description: "从末尾查看指定字节"
+        code: "tail -c 1024 file.log"
+    tips:
+      - "tail -F 比 -f 更好，支持文件轮转"
+      - "Ctrl+C 停止 tail -f"
+    related: ["head", "less", "journalctl"]
+
+  - name: head
+    summary: "查看文件开头内容"
+    examples:
+      - description: "查看前10行"
+        code: "head file.txt"
+      - description: "查看前20行"
+        code: "head -n 20 file.txt"
+      - description: "查看前100字节"
+        code: "head -c 100 file.txt"
+    tips:
+      - "head -n -1 去掉最后一行"
+    related: ["tail", "cat", "less"]
+
+  - name: less
+    summary: "分页查看文件（支持前后翻页）"
+    examples:
+      - description: "查看大文件"
+        code: "less large_file.log"
+      - description: "管道查看命令输出"
+        code: "cat file.log | less"
+    tips:
+      - "/pattern 向下搜索, ?pattern 向上搜索"
+      - "n 下一个匹配, N 上一个匹配"
+      - "g 跳到文件头, G 跳到文件尾"
+      - "Space 向下翻页, b 向上翻页, q 退出"
+    related: ["more", "tail", "head"]
+
+  - name: more
+    summary: "简单的分页查看工具"
+    examples:
+      - description: "分页查看文件"
+        code: "more file.txt"
+      - description: "管道查看"
+        code: "cat file.txt | more"
+    tips:
+      - "less 功能更强大，推荐优先使用 less"
+    related: ["less", "cat", "head"]
+
+  - name: journalctl
+    summary: "查看 systemd 系统日志"
+    examples:
+      - description: "查看所有日志"
+        code: "journalctl"
+      - description: "实时跟踪日志"
+        code: "journalctl -f"
+      - description: "查看特定服务的日志"
+        code: "journalctl -u nginx"
+      - description: "查看最近1小时的日志"
+        code: "journalctl --since '1 hour ago'"
+      - description: "查看指定级别的日志"
+        code: "journalctl -p err"
+      - description: "查看启动日志"
+        code: "journalctl -b"
+    tips:
+      - "-p 指定级别: emerg, alert, crit, err, warning, notice, info, debug"
+      - "--since/--until 支持多种时间格式"
+    related: ["systemctl", "dmesg", "tail"]

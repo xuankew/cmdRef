@@ -1,0 +1,86 @@
+category: "进程管理"
+description: "Linux 进程查看和管理命令"
+platform: linux
+commands:
+  - name: ps
+    summary: "查看进程状态"
+    examples:
+      - description: "查看所有进程"
+        code: "ps aux"
+      - description: "查看指定用户进程"
+        code: "ps -u username"
+      - description: "以树形显示"
+        code: "ps auxf"
+      - description: "查找特定进程"
+        code: "ps aux | grep nginx"
+    tips:
+      - "ps -eo pid,ppid,cmd,%mem,%cpu 自定义输出列"
+    related: ["top", "htop", "pgrep"]
+
+  - name: top
+    summary: "实时查看进程和资源使用"
+    examples:
+      - description: "启动 top"
+        code: "top"
+      - description: "按 CPU 使用率排序"
+        code: "top -o %CPU"
+      - description: "按内存使用率排序"
+        code: "top -o %MEM"
+    tips:
+      - "P 按 CPU 排序, M 按内存排序, k 终止进程"
+      - "q 退出 top"
+    related: ["htop", "ps", "vmstat"]
+
+  - name: htop
+    summary: "增强版 top，交互式进程查看器"
+    examples:
+      - description: "启动 htop"
+        code: "htop"
+      - description: "按用户过滤"
+        code: "htop -u username"
+      - description: "按 PID 过滤"
+        code: "htop -p 1234"
+    tips:
+      - "F5 树形视图, F6 排序, F9 终止进程"
+      - "需要单独安装: apt install htop"
+    related: ["top", "ps", "glances"]
+
+  - name: kill
+    summary: "终止进程"
+    examples:
+      - description: "终止指定进程"
+        code: "kill 1234"
+      - description: "强制终止"
+        code: "kill -9 1234"
+      - description: "优雅终止"
+        code: "kill -15 1234"
+      - description: "按名称终止"
+        code: "killall nginx"
+    tips:
+      - "-9 = SIGKILL (强制), -15 = SIGTERM (优雅)"
+      - "优先用 SIGTERM，让进程清理资源"
+    related: ["pkill", "killall", "xkill"]
+
+  - name: nohup
+    summary: "在后台运行命令，不受终端关闭影响"
+    examples:
+      - description: "后台运行命令"
+        code: "nohup ./script.sh &"
+      - description: "重定向输出"
+        code: "nohup ./script.sh > output.log 2>&1 &"
+    tips:
+      - "输出默认写入 nohup.out"
+      - "& 将命令放到后台"
+    related: ["screen", "tmux", "disown"]
+
+  - name: nice
+    summary: "调整进程优先级"
+    examples:
+      - description: "以低优先级运行"
+        code: "nice -n 10 ./heavy_task.sh"
+      - description: "调整运行中进程的优先级"
+        code: "renice -n 5 -p 1234"
+    tips:
+      - "nice 值范围: -20(最高) 到 19(最低)"
+      - "负值需要 root 权限"
+    related: ["top", "ps", "ionice"]

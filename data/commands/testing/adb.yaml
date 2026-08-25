@@ -1,0 +1,140 @@
+category: "ADB"
+description: "Android Debug Bridge 调试命令"
+platform: testing
+commands:
+  - name: adb devices
+    summary: "查看连接的设备列表"
+    examples:
+      - description: "列出所有连接的设备"
+        code: "adb devices"
+      - description: "详细信息"
+        code: "adb devices -l"
+    tips:
+      - "确保设备已开启 USB 调试"
+    related: ["adb connect", "adb kill-server"]
+
+  - name: adb install
+    summary: "安装 APK 到设备"
+    examples:
+      - description: "安装 APK"
+        code: "adb install app.apk"
+      - description: "覆盖安装"
+        code: "adb install -r app.apk"
+      - description: "安装到 SD 卡"
+        code: "adb install -s app.apk"
+      - description: "安装指定设备（多设备时）"
+        code: "adb -s DEVICE_ID install app.apk"
+    tips:
+      - "-r 覆盖安装保留数据"
+      - "-d 允许降级安装"
+    related: ["adb uninstall", "adb push"]
+
+  - name: adb uninstall
+    summary: "卸载应用"
+    examples:
+      - description: "卸载应用"
+        code: "adb uninstall com.example.app"
+      - description: "卸载但保留数据"
+        code: "adb uninstall -k com.example.app"
+    tips:
+      - "需要完整的包名"
+    related: ["adb install", "adb shell pm"]
+
+  - name: adb logcat
+    summary: "查看设备日志（最常用）"
+    examples:
+      - description: "查看所有日志"
+        code: "adb logcat"
+      - description: "过滤指定 tag"
+        code: "adb logcat -s MyTag"
+      - description: "过滤指定级别"
+        code: "adb logcat *:E"
+      - description: "清除日志后查看"
+        code: "adb logcat -c && adb logcat"
+      - description: "输出到文件"
+        code: "adb logcat > log.txt"
+      - description: "按进程过滤"
+        code: "adb logcat --pid=$(adb shell pidof com.example.app)"
+    tips:
+      - "级别: V=Verbose, D=Debug, I=Info, W=Warn, E=Error"
+      - "adb logcat -c 清除日志缓冲区"
+    related: ["adb shell", "adb bugreport"]
+
+  - name: adb shell
+    summary: "进入设备 Shell 或执行命令"
+    examples:
+      - description: "进入交互式 Shell"
+        code: "adb shell"
+      - description: "执行单条命令"
+        code: "adb shell ls /sdcard/"
+      - description: "获取设备属性"
+        code: "adb shell getprop ro.build.version.release"
+      - description: "查看设备内存"
+        code: "adb shell cat /proc/meminfo"
+      - description: "列出已安装包"
+        code: "adb shell pm list packages"
+      - description: "强制停止应用"
+        code: "adb shell am force-stop com.example.app"
+    tips:
+      - "am = Activity Manager, pm = Package Manager"
+    related: ["adb shell am", "adb shell pm", "adb shell dumpsys"]
+
+  - name: adb pull
+    summary: "从设备拉取文件到电脑"
+    examples:
+      - description: "拉取文件"
+        code: "adb pull /sdcard/photo.jpg ."
+      - description: "拉取目录"
+        code: "adb pull /sdcard/DCIM/ ./photos/"
+    tips:
+      - "路径基于设备的文件系统"
+    related: ["adb push", "adb shell"]
+
+  - name: adb push
+    summary: "推送文件到设备"
+    examples:
+      - description: "推送文件"
+        code: "adb push local_file.txt /sdcard/"
+      - description: "推送目录"
+        code: "adb push local_dir/ /sdcard/data/"
+    tips:
+      - "注意设备上的权限限制"
+    related: ["adb pull", "adb shell"]
+
+  - name: adb screenshot
+    summary: "截取设备屏幕"
+    examples:
+      - description: "截图并拉取到电脑"
+        code: "adb exec-out screencap -p > screenshot.png"
+      - description: "另一种方式"
+        code: "adb shell screencap /sdcard/screen.png && adb pull /sdcard/screen.png"
+    tips:
+      - "exec-out 方式更高效，不需要中间文件"
+    related: ["adb screenrecord", "adb shell"]
+
+  - name: adb screenrecord
+    summary: "录制设备屏幕视频"
+    examples:
+      - description: "录制视频（最长3分钟）"
+        code: "adb shell screenrecord /sdcard/video.mp4"
+      - description: "指定分辨率"
+        code: "adb shell screenrecord --size 720x1280 /sdcard/video.mp4"
+      - description: "限制时长"
+        code: "adb shell screenrecord --time-limit 30 /sdcard/video.mp4"
+    tips:
+      - "Ctrl+C 停止录制"
+      - "录制完需要 adb pull 拉取到电脑"
+    related: ["adb screenshot", "adb pull"]
+
+  - name: adb forward
+    summary: "端口转发"
+    examples:
+      - description: "设备端口转发到本地"
+        code: "adb forward tcp:8080 tcp:8080"
+      - description: "反向端口转发（本地到设备）"
+        code: "adb reverse tcp:8080 tcp:8080"
+      - description: "移除端口转发"
+        code: "adb forward --remove tcp:8080"
+    tips:
+      - "adb reverse 在调试 React Native 等应用时非常有用"
+    related: ["adb shell", "adb connect"]

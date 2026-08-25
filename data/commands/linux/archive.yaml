@@ -1,0 +1,81 @@
+category: "压缩解压"
+description: "Linux 压缩和解压命令"
+platform: linux
+commands:
+  - name: tar
+    summary: "打包和解包归档文件"
+    examples:
+      - description: "创建 tar.gz 压缩包"
+        code: "tar -czf archive.tar.gz dir/"
+      - description: "解压 tar.gz"
+        code: "tar -xzf archive.tar.gz"
+      - description: "创建 tar.bz2 压缩包"
+        code: "tar -cjf archive.tar.bz2 dir/"
+      - description: "解压 tar.bz2"
+        code: "tar -xjf archive.tar.bz2"
+      - description: "查看归档内容（不解压）"
+        code: "tar -tzf archive.tar.gz"
+      - description: "解压到指定目录"
+        code: "tar -xzf archive.tar.gz -C /target/dir/"
+    tips:
+      - "c=create, x=extract, z=gzip, j=bzip2, f=file"
+      - "-v 显示处理过程"
+    related: ["zip", "gzip", "bzip2"]
+
+  - name: zip
+    summary: "创建 ZIP 压缩文件"
+    examples:
+      - description: "压缩文件"
+        code: "zip archive.zip file1.txt file2.txt"
+      - description: "递归压缩目录"
+        code: "zip -r archive.zip dir/"
+      - description: "加密压缩"
+        code: "zip -e archive.zip file.txt"
+      - description: "排除某些文件"
+        code: "zip -r archive.zip dir/ -x '*.log'"
+    tips:
+      - "zip 跨平台兼容性好"
+    related: ["unzip", "tar", "7z"]
+
+  - name: unzip
+    summary: "解压 ZIP 文件"
+    examples:
+      - description: "解压到当前目录"
+        code: "unzip archive.zip"
+      - description: "解压到指定目录"
+        code: "unzip archive.zip -d /target/dir/"
+      - description: "查看归档内容"
+        code: "unzip -l archive.zip"
+      - description: "覆盖已有文件"
+        code: "unzip -o archive.zip"
+    tips:
+      - "-l 列出不解压"
+    related: ["zip", "tar", "7z"]
+
+  - name: gzip
+    summary: "压缩单个文件（.gz 格式）"
+    examples:
+      - description: "压缩文件（原文件会被删除）"
+        code: "gzip file.txt"
+      - description: "保留原文件"
+        code: "gzip -k file.txt"
+      - description: "解压"
+        code: "gzip -d file.txt.gz"
+      - description: "指定压缩级别"
+        code: "gzip -9 file.txt"
+    tips:
+      - "gzip 只压缩单个文件，多文件需先 tar 打包"
+    related: ["gunzip", "tar", "bzip2"]
+
+  - name: bzip2
+    summary: "压缩单个文件（.bz2 格式，压缩率更高）"
+    examples:
+      - description: "压缩文件"
+        code: "bzip2 file.txt"
+      - description: "解压"
+        code: "bzip2 -d file.txt.bz2"
+      - description: "保留原文件"
+        code: "bzip2 -k file.txt"
+    tips:
+      - "bzip2 压缩率高于 gzip，但速度较慢"
+    related: ["bunzip2", "gzip", "tar"]

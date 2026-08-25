@@ -1,0 +1,56 @@
+category: "编辑器"
+description: "Linux 常用文本编辑器命令"
+platform: linux
+commands:
+  - name: vim
+    summary: "功能强大的模态文本编辑器（vi improved）"
+    examples:
+      - description: "打开文件"
+        code: "vim file.txt"
+      - description: "打开并跳转到指定行"
+        code: "vim +100 file.txt"
+      - description: "只读模式打开"
+        code: "vim -R file.txt"
+      - description: "多文件分屏打开"
+        code: "vim -O file1.txt file2.txt"
+      - description: "差异比较"
+        code: "vimdiff file1.txt file2.txt"
+    tips:
+      - "i 进入插入模式, Esc 返回普通模式"
+      - ":w 保存, :q 退出, :wq 保存并退出, :q! 强制退出"
+      - "dd 删除行, yy 复制行, p 粘贴, u 撤销"
+      - "/pattern 向下搜索, n 下一个, N 上一个"
+      - ":set number 显示行号"
+      - "gg 跳到文件头, G 跳到文件尾, :n 跳到第n行"
+      - "Ctrl+v 进入可视块模式，可批量编辑"
+    related: ["nano", "emacs", "vi"]
+
+  - name: nano
+    summary: "简单易用的终端文本编辑器"
+    examples:
+      - description: "打开文件"
+        code: "nano file.txt"
+      - description: "打开并跳转到指定行"
+        code: "nano +100 file.txt"
+      - description: "只读模式打开"
+        code: "nano -v file.txt"
+    tips:
+      - "Ctrl+O 保存, Ctrl+X 退出"
+      - "Ctrl+W 搜索, Ctrl+K 删除行"
+      - "底部显示快捷键提示，适合初学者"
+    related: ["vim", "emacs", "micro"]
+
+  - name: emacs
+    summary: "可扩展的全功能文本编辑器"
+    examples:
+      - description: "打开文件"
+        code: "emacs file.txt"
+      - description: "终端模式（无GUI）"
+        code: "emacs -nw file.txt"
+      - description: "执行 Lisp 表达式"
+        code: "emacs --eval '(message \"hello\")'"
+    tips:
+      - "Ctrl+X Ctrl+S 保存, Ctrl+X Ctrl+C 退出"
+      - "Ctrl+S 搜索, Ctrl+R 反向搜索"
+      - "M-x 执行命令"
+    related: ["vim", "nano", "micro"]
