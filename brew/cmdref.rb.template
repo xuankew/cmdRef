@@ -1,0 +1,35 @@
+class Cmdref < Formula
+  desc "Interactive command reference tool for Linux, macOS, Windows and testing commands"
+  homepage "https://github.com/xuankew/cmdRef"
+  version "VERSION_PLACEHOLDER"
+  license "MIT"
+
+  on_macos do
+    if Hardware::CPU.arm?
+      url "DOWNLOAD_URL_MACOS_AARCH64"
+      sha256 "SHA256_MACOS_AARCH64"
+    else
+      url "DOWNLOAD_URL_MACOS_X86_64"
+      sha256 "SHA256_MACOS_X86_64"
+    end
+  end
+
+  on_linux do
+    if Hardware::CPU.arm?
+      url "DOWNLOAD_URL_LINUX_AARCH64"
+      sha256 "SHA256_LINUX_AARCH64"
+    else
+      url "DOWNLOAD_URL_LINUX_X86_64"
+      sha256 "SHA256_LINUX_X86_64"
+    end
+  end
+
+  def install
+    binary = Dir["*"].first
+    bin.install binary => "cmdref"
+  end
+
+  test do
+    assert_match "cmdref", shell_output("#{bin}/cmdref --version")
+  end
+end

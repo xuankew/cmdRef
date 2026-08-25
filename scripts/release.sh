@@ -10,8 +10,7 @@
 # 本脚本会:
 #   - 从 GitHub Release 下载各平台二进制文件
 #   - 计算 SHA256 校验值
-#   - 更新 brew Formula 和 scoop manifest
-#   - 提示后续手动步骤
+#   - 从模板生成 brew Formula 和 scoop manifest
 
 set -euo pipefail
 
@@ -30,7 +29,6 @@ TEMP_DIR=$(mktemp -d)
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_DIR="$(dirname "$SCRIPT_DIR")"
 
-# 用于存储 SHA256 的变量（兼容 bash 3.x，不用 declare -A）
 HASH_MACOS_AARCH64=""
 HASH_MACOS_X86_64=""
 HASH_LINUX_AARCH64=""
@@ -69,12 +67,19 @@ download_and_hash "cmdref-linux-x86_64"  "HASH_LINUX_X86_64"
 download_and_hash "cmdref.exe"           "HASH_WINDOWS"
 echo ""
 
-# 更新 Homebrew Formula
-echo "[2/3] Updating Homebrew Formula..."
+# 从模板生成 Homebrew Formula
+echo "[2/3] Generating Homebrew Formula from template..."
+TEMPLATE_FILE="${PROJECT_DIR}/brew/cmdref.rb.template"
 FORMULA_FILE="${PROJECT_DIR}/brew/cmdref.rb"
 
-sed -i.bak \
-    -e "s|version \".*\"|version \"${VERSION}\"|" \
+if [ ! -f "$TEMPLATE_FILE" ]; then
+    echo "  ERROR: Template not found: ${TEMPLATE_FILE}"
+    exit 1
+fi
+
+# 从模板复制并替换所有占位符
+sed \
+    -e "s|VERSION_PLACEHOLDER|${VERSION}|" \
     -e "s|DOWNLOAD_URL_MACOS_AARCH64|${BASE_URL}/cmdref-macos-aarch64|" \
     -e "s|DOWNLOAD_URL_MACOS_X86_64|${BASE_URL}/cmdref-macos-x86_64|" \
     -e "s|DOWNLOAD_URL_LINUX_AARCH64|${BASE_URL}/cmdref-linux-aarch64|" \
@@ -83,9 +88,9 @@ sed -i.bak \
     -e "s|SHA256_MACOS_X86_64|${HASH_MACOS_X86_64}|" \
     -e "s|SHA256_LINUX_AARCH64|${HASH_LINUX_AARCH64}|" \
     -e "s|SHA256_LINUX_X86_64|${HASH_LINUX_X86_64}|" \
-    "$FORMULA_FILE"
-rm -f "${FORMULA_FILE}.bak"
-echo "  Updated: ${FORMULA_FILE}"
+    "$TEMPLATE_FILE" > "$FORMULA_FILE"
+
+echo "  Generated: ${FORMULA_FILE}"
 echo ""
 
 # 更新 Scoop manifest
@@ -110,25 +115,5 @@ echo ""
 # 清理
 rm -rf "$TEMP_DIR"
 
-# 输出后续步骤
-echo "=========================================="
-echo "  后续步骤"
-echo "=========================================="
+echo "  SHA256 updated successfully."
 echo ""
-echo "1. 更新 Cargo.toml 中的版本号:"
-echo "   version = \"${VERSION}\""
-echo ""
-echo "2. 提交并推送更改:"
-echo "   git add -A && git commit -m 'release v${VERSION}'"
-echo "   git push origin main"
-echo ""
-echo "3. Homebrew (同步 Formula 到 homebrew-cmdref tap 仓库):"
-echo "   cp brew/cmdref.rb ../homebrew-cmdref/cmdref.rb"
-echo "   cd ../homebrew-cmdref && git add . && git commit -m 'v${VERSION}' && git push"
-echo ""
-echo "   用户安装: brew tap xuankew/cmdref && brew install cmdref"
-echo ""
-echo "4. 发布到 crates.io:"
-echo "   cargo publish"
-echo ""
-echo "Done!"
