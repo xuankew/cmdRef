@@ -2,6 +2,7 @@ mod app;
 mod data;
 mod search;
 mod ui;
+mod update;
 
 use std::io;
 use std::time::Duration;
@@ -24,10 +25,26 @@ struct Cli {
     /// 直接搜索指定关键字
     #[arg(short, long)]
     search: Option<String>,
+
+    /// 子命令
+    #[command(subcommand)]
+    command: Option<Commands>,
+}
+
+#[derive(clap::Subcommand)]
+enum Commands {
+    /// 检查并更新到最新版本
+    Update,
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let cli = Cli::parse();
+
+    // 处理子命令
+    if let Some(Commands::Update) = cli.command {
+        update::run_update();
+        return Ok(());
+    }
 
     // 加载数据
     let platforms = data::load_all_data();
