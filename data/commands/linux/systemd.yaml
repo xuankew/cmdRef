@@ -1,0 +1,71 @@
+category: "服务管理"
+description: "systemd 服务管理和日志查看"
+platform: linux
+commands:
+  - name: systemctl
+    summary: "管理 systemd 服务"
+    tags: ["服务管理", "运维", "启动停止"]
+    examples:
+      - description: "启动服务"
+        code: "sudo systemctl start nginx"
+        frequency: daily
+      - description: "停止服务"
+        code: "sudo systemctl stop nginx"
+        frequency: daily
+      - description: "重启服务"
+        code: "sudo systemctl restart nginx"
+        frequency: daily
+      - description: "重新加载配置（不重启）"
+        code: "sudo systemctl reload nginx"
+        frequency: daily
+      - description: "查看服务状态"
+        code: "systemctl status nginx"
+        frequency: daily
+      - description: "设置开机自启"
+        code: "sudo systemctl enable nginx"
+        frequency: weekly
+      - description: "取消开机自启"
+        code: "sudo systemctl disable nginx"
+        frequency: weekly
+      - description: "查看所有失败的服务"
+        code: "systemctl --failed"
+        frequency: weekly
+      - description: "列出所有运行中的服务"
+        code: "systemctl list-units --type=service --state=running"
+        frequency: weekly
+    tips:
+      - "reload 比 restart 更温和：不中断现有连接"
+      - "enable/disable 控制开机自启，start/stop 控制当前运行"
+      - "--user 管理用户级服务（不需要 sudo）"
+    related: ["journalctl", "service", "systemctl status"]
+
+  - name: journalctl
+    summary: "查看 systemd 日志"
+    tags: ["日志", "排查问题", "运维"]
+    examples:
+      - description: "查看某服务的日志"
+        code: "journalctl -u nginx"
+        frequency: daily
+      - description: "实时跟踪日志"
+        code: "journalctl -u nginx -f"
+        frequency: daily
+      - description: "查看今天的日志"
+        code: "journalctl --since today"
+        frequency: daily
+      - description: "查看指定时间范围"
+        code: "journalctl --since '2024-01-01 10:00' --until '2024-01-01 12:00'"
+        frequency: weekly
+      - description: "按日志级别过滤"
+        code: "journalctl -p err"
+        frequency: weekly
+      - description: "查看上次启动的日志"
+        code: "journalctl -b -1"
+        frequency: rarely
+      - description: "查看磁盘占用并清理"
+        code: "journalctl --disk-usage && sudo journalctl --vacuum-size=100M"
+        frequency: rarely
+    tips:
+      - "-f 实时跟踪，类似 tail -f"
+      - "-p 级别: emerg, alert, crit, err, warning, notice, info, debug"
+      - "journalctl -xe 查看最近系统异常（排错神器）"
+    related: ["systemctl", "dmesg", "tail"]

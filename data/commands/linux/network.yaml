@@ -112,3 +112,64 @@ commands:
     tips:
       - "dig 比 nslookup 功能更强大"
     related: ["nslookup", "host", "ping"]
+
+  - name: tcpdump
+    summary: "网络抓包工具"
+    tags: ["抓包", "调试", "网络安全"]
+    examples:
+      - description: "抓取指定端口的包"
+        code: "sudo tcpdump -i any port 80"
+        frequency: weekly
+      - description: "抓取指定主机的包"
+        code: "sudo tcpdump -i any host 192.168.1.100"
+        frequency: weekly
+      - description: "抓包并保存到文件"
+        code: "sudo tcpdump -i any -w capture.pcap"
+        frequency: weekly
+      - description: "读取 pcap 文件"
+        code: "tcpdump -r capture.pcap"
+        frequency: weekly
+      - description: "只显示 HTTP 请求"
+        code: "sudo tcpdump -i any -A 'tcp port 80'"
+        frequency: rarely
+      - description: "限制抓取数量"
+        code: "sudo tcpdump -i any -c 100 port 443"
+        frequency: rarely
+    tips:
+      - "保存为 pcap 文件后用 Wireshark 分析更方便"
+      - "-n 不解析域名和端口号（更快）"
+      - "-A 显示 ASCII 内容，-X 显示十六进制"
+    related: ["wireshark", "netstat", "ss"]
+
+  - name: iptables
+    summary: "Linux 防火墙规则管理"
+    tags: ["防火墙", "安全", "网络"]
+    examples:
+      - description: "查看所有规则"
+        code: "sudo iptables -L -n -v"
+        frequency: weekly
+      - description: "允许某个 IP 访问"
+        code: "sudo iptables -A INPUT -s 192.168.1.0/24 -j ACCEPT"
+        frequency: weekly
+      - description: "阻止某个 IP"
+        code: "sudo iptables -A INPUT -s 10.0.0.5 -j DROP"
+        frequency: weekly
+      - description: "开放指定端口"
+        code: "sudo iptables -A INPUT -p tcp --dport 8080 -j ACCEPT"
+        frequency: weekly
+      - description: "删除指定规则"
+        code: "sudo iptables -D INPUT -p tcp --dport 8080 -j ACCEPT"
+        danger: medium
+        frequency: rarely
+      - description: "清空所有规则（危险！）"
+        code: "sudo iptables -F"
+        danger: high
+        frequency: rarely
+      - description: "保存规则（Debian/Ubuntu）"
+        code: "sudo iptables-save > /etc/iptables/rules.v4"
+        frequency: rarely
+    tips:
+      - "iptables 规则顺序很重要：先匹配的规则生效"
+      - "新系统推荐用 nftables 替代"
+      - "-F 清空规则前确认不会锁定自己"
+    related: ["nftables", "ufw", "firewalld"]

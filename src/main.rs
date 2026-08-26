@@ -144,6 +144,7 @@ fn handle_normal_input(app: &mut App, key: KeyCode, _modifiers: KeyModifiers) {
                 KeyCode::Char('2') => app.jump_to_platform(1),
                 KeyCode::Char('3') => app.jump_to_platform(2),
                 KeyCode::Char('4') => app.jump_to_platform(3),
+                KeyCode::Char('5') => app.jump_to_platform(4),
                 KeyCode::Esc => app.should_quit = true,
                 _ => {}
             }

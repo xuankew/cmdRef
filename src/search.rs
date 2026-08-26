@@ -55,7 +55,14 @@ impl SearchEngine {
                         .filter_map(|t| self.matcher.fuzzy_match(t, query))
                         .max();
 
-                    // 综合评分：名称 x3, 摘要 x1, examples x1, tips x0.5
+                    // 搜索 tags（场景标签）
+                    let tags_score = command
+                        .tags
+                        .iter()
+                        .filter_map(|t| self.matcher.fuzzy_match(t, query))
+                        .max();
+
+                    // 综合评分：名称 x3, 摘要 x1, examples x1, tips x0.5, tags x2
                     let mut score: i64 = 0;
                     let mut matched = false;
 
@@ -73,6 +80,10 @@ impl SearchEngine {
                     }
                     if let Some(t) = tips_score {
                         score += t / 2;
+                        matched = true;
+                    }
+                    if let Some(tg) = tags_score {
+                        score += tg * 2;
                         matched = true;
                     }
 

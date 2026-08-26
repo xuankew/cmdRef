@@ -193,7 +193,7 @@ fn draw_command_detail(frame: &mut Frame, app: &App, area: Rect) {
         lines.push(Line::from(""));
     }
 
-    // 命令名和摘要
+    // 命令名 + 摘要 + 标签
     let bookmark_indicator = if app.is_current_bookmarked() { " ★" } else { "" };
     lines.push(Line::from(vec![
         Span::styled(
@@ -205,9 +205,52 @@ fn draw_command_detail(frame: &mut Frame, app: &App, area: Rect) {
             Style::default().fg(Color::White),
         ),
     ]));
+
+    // 标签
+    if !cmd.tags.is_empty() {
+        lines.push(Line::from(vec![
+            Span::styled(
+                format!("  {} ", cmd.tags.iter().map(|t| format!("#{}", t)).collect::<Vec<_>>().join(" ")),
+                Style::default().fg(Color::DarkGray),
+            ),
+        ]));
+    }
     lines.push(Line::from(""));
 
-    // 示例
+    // Quick Reference: daily 示例
+    let daily_examples: Vec<_> = cmd.examples.iter()
+        .filter(|e| e.frequency == "daily")
+        .collect();
+
+    if !daily_examples.is_empty() {
+        lines.push(Line::from(vec![
+            Span::styled(
+                "  ⚡ QUICK REFERENCE",
+                Style::default().fg(Color::Green).add_modifier(Modifier::BOLD),
+            ),
+        ]));
+        lines.push(Line::from(vec![
+            Span::styled(
+                "  ────────────────────────────────",
+                Style::default().fg(Color::DarkGray),
+            ),
+        ]));
+        for example in &daily_examples {
+            lines.push(Line::from(vec![
+                Span::styled(
+                    format!("    $ {}", example.code),
+                    Style::default().fg(Color::Green),
+                ),
+                Span::styled(
+                    format!("  // {}", example.description),
+                    Style::default().fg(Color::DarkGray),
+                ),
+            ]));
+        }
+        lines.push(Line::from(""));
+    }
+
+    // 全部示例
     if !cmd.examples.is_empty() {
         lines.push(Line::from(vec![
             Span::styled(
@@ -223,12 +266,48 @@ fn draw_command_detail(frame: &mut Frame, app: &App, area: Rect) {
         ]));
 
         for example in &cmd.examples {
-            lines.push(Line::from(vec![
+            // 描述 + 频率标记
+            let mut desc_spans = vec![
                 Span::styled(
                     format!("    {}:", example.description),
                     Style::default().fg(Color::Gray),
                 ),
-            ]));
+            ];
+            // 频率标记
+            match example.frequency.as_str() {
+                "daily" => desc_spans.push(Span::styled(
+                    " ⚡",
+                    Style::default().fg(Color::Green),
+                )),
+                "weekly" => desc_spans.push(Span::styled(
+                    " ○",
+                    Style::default().fg(Color::Blue),
+                )),
+                "rarely" => desc_spans.push(Span::styled(
+                    " ·",
+                    Style::default().fg(Color::DarkGray),
+                )),
+                _ => {}
+            }
+            lines.push(Line::from(desc_spans));
+
+            // 危险警告
+            if example.danger == "high" {
+                lines.push(Line::from(vec![
+                    Span::styled(
+                        "      ⚠ DANGEROUS - use with caution",
+                        Style::default().fg(Color::Red).add_modifier(Modifier::BOLD),
+                    ),
+                ]));
+            } else if example.danger == "medium" {
+                lines.push(Line::from(vec![
+                    Span::styled(
+                        "      ⚠ use with caution",
+                        Style::default().fg(Color::Yellow),
+                    ),
+                ]));
+            }
+
             lines.push(Line::from(vec![
                 Span::styled(
                     format!("      $ {}", example.code),

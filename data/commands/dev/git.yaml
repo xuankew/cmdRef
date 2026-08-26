@@ -1,0 +1,562 @@
+category: "Git"
+description: "版本控制核心命令"
+platform: dev
+commands:
+  - name: git clone
+    summary: "克隆远程仓库到本地"
+    tags: ["初始化", "拉取代码"]
+    examples:
+      - description: "克隆仓库"
+        code: "git clone https://github.com/user/repo.git"
+        frequency: daily
+      - description: "克隆到指定目录"
+        code: "git clone https://github.com/user/repo.git my-dir"
+        frequency: weekly
+      - description: "浅克隆（仅最近1次提交，节省空间）"
+        code: "git clone --depth 1 https://github.com/user/repo.git"
+        frequency: weekly
+      - description: "克隆指定分支"
+        code: "git clone -b develop https://github.com/user/repo.git"
+        frequency: weekly
+    tips:
+      - "克隆后自动创建 remote 'origin'"
+      - "SSH 方式: git clone git@github.com:user/repo.git"
+    related: ["git remote", "git fetch", "git init"]
+
+  - name: git init
+    summary: "初始化新的 Git 仓库"
+    tags: ["初始化"]
+    examples:
+      - description: "在当前目录初始化仓库"
+        code: "git init"
+        frequency: weekly
+      - description: "初始化并设置初始分支名为 main"
+        code: "git init -b main"
+        frequency: weekly
+    tips:
+      - "初始化后记得创建 .gitignore"
+    related: ["git clone", "git add"]
+
+  - name: git add
+    summary: "将文件添加到暂存区"
+    tags: ["提交代码", "暂存"]
+    examples:
+      - description: "添加指定文件"
+        code: "git add file.txt"
+        frequency: daily
+      - description: "添加所有修改"
+        code: "git add ."
+        frequency: daily
+      - description: "添加某目录下所有文件"
+        code: "git add src/"
+        frequency: weekly
+      - description: "交互式添加（逐文件确认）"
+        code: "git add -p"
+        frequency: weekly
+    tips:
+      - "git add -p 可以逐块（hunk）选择暂存内容"
+      - "git add -u 只暂存已跟踪文件的修改"
+    related: ["git commit", "git status", "git reset"]
+
+  - name: git commit
+    summary: "提交暂存区的更改"
+    tags: ["提交代码"]
+    examples:
+      - description: "提交并写消息"
+        code: "git commit -m 'feat: add login page'"
+        frequency: daily
+      - description: "提交所有已跟踪文件的修改（跳过 add）"
+        code: "git commit -am 'fix: resolve crash'"
+        frequency: daily
+      - description: "修改上次提交的消息"
+        code: "git commit --amend -m 'new message'"
+        frequency: weekly
+      - description: "追加文件到上次提交（不修改消息）"
+        code: "git commit --amend --no-edit"
+        frequency: weekly
+    tips:
+      - "推荐遵循 Conventional Commits: feat/fix/docs/style/refactor/test/chore"
+      - "--amend 会改变 commit hash，不要对已 push 的提交使用"
+    related: ["git add", "git log", "git push"]
+
+  - name: git status
+    summary: "查看工作区和暂存区状态"
+    tags: ["查看状态"]
+    examples:
+      - description: "查看完整状态"
+        code: "git status"
+        frequency: daily
+      - description: "简洁模式"
+        code: "git status -s"
+        frequency: daily
+    tips:
+      - "养成每次操作前后都 git status 的习惯"
+      - "-s 输出: M=修改, A=新增, D=删除, ?=未跟踪"
+    related: ["git diff", "git log"]
+
+  - name: git push
+    summary: "推送本地提交到远程"
+    tags: ["提交代码", "远程同步"]
+    examples:
+      - description: "推送当前分支"
+        code: "git push"
+        frequency: daily
+      - description: "推送并设置上游（首次推送）"
+        code: "git push -u origin feature-branch"
+        frequency: weekly
+      - description: "推送所有标签"
+        code: "git push --tags"
+        frequency: rarely
+      - description: "强制推送（覆盖远程历史）"
+        code: "git push --force-with-lease"
+        danger: high
+        frequency: rarely
+    tips:
+      - "用 --force-with-lease 替代 --force，更安全"
+      - "首次推送新分支: git push -u origin branch-name"
+    related: ["git pull", "git fetch", "git remote"]
+
+  - name: git pull
+    summary: "拉取远程更新并合并"
+    tags: ["远程同步", "合并代码"]
+    examples:
+      - description: "拉取并合并（默认）"
+        code: "git pull"
+        frequency: daily
+      - description: "拉取并 rebase（保持线性历史）"
+        code: "git pull --rebase"
+        frequency: daily
+      - description: "拉取指定远程和分支"
+        code: "git pull origin develop"
+        frequency: weekly
+    tips:
+      - "建议配置 git config pull.rebase true"
+      - "冲突时: 解决冲突 → git add → git rebase --continue"
+    related: ["git push", "git fetch", "git merge"]
+
+  - name: git fetch
+    summary: "拉取远程更新（不合并）"
+    tags: ["远程同步"]
+    examples:
+      - description: "拉取所有远程更新"
+        code: "git fetch"
+        frequency: daily
+      - description: "拉取指定远程"
+        code: "git fetch origin"
+        frequency: weekly
+      - description: "拉取并清理已删除的远程分支"
+        code: "git fetch --prune"
+        frequency: weekly
+      - description: "拉取所有远程"
+        code: "git fetch --all"
+        frequency: weekly
+    tips:
+      - "fetch 不会修改工作区，比 pull 更安全"
+      - "fetch 后可用 git log HEAD..origin/main 查看远程新提交"
+    related: ["git pull", "git push", "git remote"]
+
+  - name: git branch
+    summary: "管理分支"
+    tags: ["分支管理"]
+    examples:
+      - description: "查看所有本地分支"
+        code: "git branch"
+        frequency: daily
+      - description: "查看包含远程的所有分支"
+        code: "git branch -a"
+        frequency: daily
+      - description: "创建新分支"
+        code: "git branch feature-login"
+        frequency: daily
+      - description: "删除已合并的分支"
+        code: "git branch -d feature-login"
+        frequency: weekly
+      - description: "强制删除未合并的分支"
+        code: "git branch -D feature-login"
+        danger: medium
+        frequency: weekly
+      - description: "重命名当前分支"
+        code: "git branch -m new-name"
+        frequency: weekly
+    tips:
+      - "-d 只删除已合并的分支，-D 强制删除"
+      - "创建并切换: git checkout -b branch-name"
+    related: ["git checkout", "git merge", "git log"]
+
+  - name: git checkout
+    summary: "切换分支或恢复文件"
+    tags: ["分支管理", "回退"]
+    examples:
+      - description: "切换到已有分支"
+        code: "git checkout develop"
+        frequency: daily
+      - description: "创建并切换到新分支"
+        code: "git checkout -b feature-login"
+        frequency: daily
+      - description: "恢复单个文件到暂存区状态"
+        code: "git checkout -- file.txt"
+        danger: medium
+        frequency: weekly
+      - description: "切换到某个 commit（ detached HEAD）"
+        code: "git checkout abc1234"
+        frequency: rarely
+    tips:
+      - "新命令 git switch 替代分支切换，git restore 替代文件恢复"
+      - "checkout -- file 会丢弃工作区的修改，不可恢复"
+    related: ["git switch", "git restore", "git branch"]
+
+  - name: git switch
+    summary: "切换分支（推荐替代 checkout）"
+    tags: ["分支管理"]
+    examples:
+      - description: "切换到已有分支"
+        code: "git switch develop"
+        frequency: daily
+      - description: "创建并切换到新分支"
+        code: "git switch -c feature-login"
+        frequency: daily
+      - description: "切换回上一个分支"
+        code: "git switch -"
+        frequency: daily
+    tips:
+      - "git switch 比 git checkout 更安全，不会意外覆盖文件"
+    related: ["git checkout", "git branch", "git restore"]
+
+  - name: git merge
+    summary: "合并分支"
+    tags: ["合并代码", "分支管理"]
+    examples:
+      - description: "合并指定分支到当前分支"
+        code: "git merge feature-login"
+        frequency: daily
+      - description: "合并但不自动提交（先审查）"
+        code: "git merge --no-commit feature-login"
+        frequency: weekly
+      - description: "强制创建合并提交（即使可以 fast-forward）"
+        code: "git merge --no-ff feature-login"
+        frequency: weekly
+      - description: "中止合并"
+        code: "git merge --abort"
+        frequency: rarely
+    tips:
+      - "合并冲突时: 编辑冲突文件 → git add → git commit"
+      - "--no-ff 保留分支历史，适合 feature 分支合并"
+    related: ["git rebase", "git branch", "git log"]
+
+  - name: git rebase
+    summary: "变基：将提交移到另一个基点上"
+    tags: ["合并代码", "整理历史"]
+    examples:
+      - description: "将当前分支变基到 main"
+        code: "git rebase main"
+        frequency: weekly
+      - description: "交互式变基（整理最近3个提交）"
+        code: "git rebase -i HEAD~3"
+        frequency: weekly
+      - description: "解决冲突后继续变基"
+        code: "git rebase --continue"
+        frequency: weekly
+      - description: "中止变基"
+        code: "git rebase --abort"
+        frequency: rarely
+    tips:
+      - "永远不要对已 push 到公共分支的提交做 rebase"
+      - "交互式变基中可以: pick/squash/reword/edit/drop"
+    related: ["git merge", "git cherry-pick", "git log"]
+
+  - name: git log
+    summary: "查看提交历史"
+    tags: ["查看历史", "排查问题"]
+    examples:
+      - description: "简洁的单行历史"
+        code: "git log --oneline"
+        frequency: daily
+      - description: "查看最近 10 条提交"
+        code: "git log --oneline -10"
+        frequency: daily
+      - description: "图形化分支历史"
+        code: "git log --oneline --graph --all"
+        frequency: daily
+      - description: "查看某个文件的修改历史"
+        code: "git log --follow -p -- file.txt"
+        frequency: weekly
+      - description: "查看某个人的提交"
+        code: "git log --author='name'"
+        frequency: weekly
+      - description: "查看某个时间段的提交"
+        code: "git log --since='2024-01-01' --until='2024-03-01'"
+        frequency: rarely
+      - description: "查看某次提交修改了哪些文件"
+        code: "git log --stat -1 abc1234"
+        frequency: weekly
+    tips:
+      - "--graph --all 可视化所有分支的合并历史"
+      - "git log -S 'keyword' 查找引入/删除某关键字的提交"
+    related: ["git show", "git diff", "git blame"]
+
+  - name: git diff
+    summary: "查看文件差异"
+    tags: ["查看状态", "代码审查", "排查问题"]
+    examples:
+      - description: "工作区 vs 暂存区"
+        code: "git diff"
+        frequency: daily
+      - description: "暂存区 vs 最新提交"
+        code: "git diff --staged"
+        frequency: daily
+      - description: "两个分支的差异"
+        code: "git diff main..develop"
+        frequency: weekly
+      - description: "某次提交的变更"
+        code: "git diff abc1234^..abc1234"
+        frequency: weekly
+      - description: "只看变更的文件名"
+        code: "git diff --name-only main..develop"
+        frequency: weekly
+      - description: "查看变更统计"
+        code: "git diff --stat main..develop"
+        frequency: weekly
+    tips:
+      - "git diff --word-diff 按单词而非行显示差异"
+      - "配合外部 diff 工具: git difftool"
+    related: ["git log", "git show", "git status"]
+
+  - name: git stash
+    summary: "暂存当前修改（不提交）"
+    tags: ["临时保存", "切换分支"]
+    examples:
+      - description: "暂存当前修改"
+        code: "git stash"
+        frequency: daily
+      - description: "暂存并命名"
+        code: "git stash save 'wip: login feature'"
+        frequency: weekly
+      - description: "查看所有暂存"
+        code: "git stash list"
+        frequency: daily
+      - description: "恢复最近的暂存"
+        code: "git stash pop"
+        frequency: daily
+      - description: "暂存包括未跟踪的文件"
+        code: "git stash -u"
+        frequency: weekly
+    tips:
+      - "stash pop = apply + drop"
+      - "切换分支前 stash 保存修改，切换后 pop 恢复"
+    related: ["git checkout", "git commit", "git branch"]
+
+  - name: git reset
+    summary: "回退提交/暂存区/工作区"
+    tags: ["回退", "撤销"]
+    examples:
+      - description: "撤销暂存（保留修改在工作区）"
+        code: "git reset HEAD file.txt"
+        frequency: daily
+      - description: "软回退（保留修改在暂存区）"
+        code: "git reset --soft HEAD~1"
+        frequency: weekly
+      - description: "混合回退（保留修改在工作区，默认）"
+        code: "git reset HEAD~1"
+        frequency: weekly
+      - description: "硬回退（丢弃所有修改）"
+        code: "git reset --hard HEAD~3"
+        danger: high
+        frequency: rarely
+      - description: "回退到指定 commit"
+        code: "git reset --hard abc1234"
+        danger: high
+        frequency: rarely
+    tips:
+      - "soft: 提交和暂存都撤销，修改保留在暂存区"
+      - "hard 会丢弃修改，不可恢复（除非用 reflog）"
+      - "已 push 的提交用 git revert 代替 reset"
+    related: ["git revert", "git checkout", "git reflog"]
+
+  - name: git revert
+    summary: "创建一个新提交来撤销指定提交"
+    tags: ["回退", "撤销"]
+    examples:
+      - description: "撤销指定提交"
+        code: "git revert abc1234"
+        frequency: weekly
+      - description: "撤销但不自动提交"
+        code: "git revert --no-commit abc1234"
+        frequency: rarely
+      - description: "撤销最近一次合并"
+        code: "git revert -m 1 merge_commit_hash"
+        frequency: rarely
+    tips:
+      - "revert 比 reset 安全：不改变历史，而是新增一个撤销提交"
+      - "适合已 push 到远程的提交的回退"
+    related: ["git reset", "git log", "git cherry-pick"]
+
+  - name: git cherry-pick
+    summary: "选择性应用某个提交"
+    tags: ["合并代码", "挑选提交"]
+    examples:
+      - description: "挑选单个提交"
+        code: "git cherry-pick abc1234"
+        frequency: weekly
+      - description: "挑选多个提交"
+        code: "git cherry-pick abc1234 def5678"
+        frequency: rarely
+      - description: "挑选但不自动提交"
+        code: "git cherry-pick --no-commit abc1234"
+        frequency: rarely
+    tips:
+      - "适合从其他分支挑选个别修复"
+      - "冲突时: 解决 → git add → git cherry-pick --continue"
+    related: ["git merge", "git rebase", "git log"]
+
+  - name: git show
+    summary: "查看某次提交的详细信息"
+    tags: ["查看历史", "排查问题"]
+    examples:
+      - description: "查看最近一次提交"
+        code: "git show"
+        frequency: daily
+      - description: "查看指定提交"
+        code: "git show abc1234"
+        frequency: daily
+      - description: "只看变更的文件名"
+        code: "git show --name-only abc1234"
+        frequency: weekly
+      - description: "查看某个 tag 的详情"
+        code: "git show v1.0.0"
+        frequency: rarely
+    tips:
+      - "git show = git log -1 + git diff"
+    related: ["git log", "git diff", "git blame"]
+
+  - name: git blame
+    summary: "逐行查看文件的修改者和提交"
+    tags: ["排查问题", "代码审查"]
+    examples:
+      - description: "查看整个文件的逐行历史"
+        code: "git blame file.txt"
+        frequency: weekly
+      - description: "查看指定行范围"
+        code: "git blame -L 10,20 file.txt"
+        frequency: weekly
+      - description: "显示完整 commit hash"
+        code: "git blame -l file.txt"
+        frequency: rarely
+    tips:
+      - "快速定位某行代码是谁、什么时候改的"
+      - "配合 git show <hash> 查看完整提交"
+    related: ["git log", "git show", "git diff"]
+
+  - name: git tag
+    summary: "管理标签（版本标记）"
+    tags: ["版本发布"]
+    examples:
+      - description: "查看所有标签"
+        code: "git tag"
+        frequency: weekly
+      - description: "创建轻量标签"
+        code: "git tag v1.0.0"
+        frequency: weekly
+      - description: "创建附注标签（推荐）"
+        code: "git tag -a v1.0.0 -m 'Release 1.0.0'"
+        frequency: weekly
+      - description: "给历史提交打标签"
+        code: "git tag -a v0.9.0 abc1234 -m 'Beta release'"
+        frequency: rarely
+      - description: "推送标签到远程"
+        code: "git push origin v1.0.0"
+        frequency: weekly
+      - description: "推送所有标签"
+        code: "git push --tags"
+        frequency: rarely
+    tips:
+      - "附注标签 (-a) 包含作者、日期、消息，推荐用于发布"
+      - "git push 默认不推送标签，需要显式推送"
+    related: ["git push", "git log", "git show"]
+
+  - name: git remote
+    summary: "管理远程仓库"
+    tags: ["远程同步"]
+    examples:
+      - description: "查看所有远程"
+        code: "git remote -v"
+        frequency: weekly
+      - description: "添加远程"
+        code: "git remote add upstream https://github.com/upstream/repo.git"
+        frequency: weekly
+      - description: "修改远程 URL"
+        code: "git remote set-url origin https://new-url.git"
+        frequency: rarely
+      - description: "删除远程"
+        code: "git remote remove old-remote"
+        frequency: rarely
+    tips:
+      - "origin = 你自己的仓库, upstream = 上游原始仓库"
+      - "fork 项目后: remote add upstream 保持与上游同步"
+    related: ["git fetch", "git push", "git pull"]
+
+  - name: git reflog
+    summary: "查看所有操作记录（包括已删除的提交）"
+    tags: ["回退", "恢复", "排查问题"]
+    examples:
+      - description: "查看操作记录"
+        code: "git reflog"
+        frequency: weekly
+      - description: "恢复误删的提交"
+        code: "git cherry-pick HEAD@{5}"
+        frequency: rarely
+      - description: "恢复到 reflog 中的某个状态"
+        code: "git reset --hard HEAD@{3}"
+        danger: high
+        frequency: rarely
+    tips:
+      - "reflog 是救命稻草：即使 reset --hard 也能找回"
+      - "reflog 默认保留 90 天"
+    related: ["git reset", "git log", "git show"]
+
+  - name: git config
+    summary: "配置 Git"
+    tags: ["初始化", "配置"]
+    examples:
+      - description: "设置用户名和邮箱"
+        code: "git config --global user.name 'Your Name' && git config --global user.email 'you@email.com'"
+        frequency: weekly
+      - description: "设置默认编辑器"
+        code: "git config --global core.editor 'vim'"
+        frequency: rarely
+      - description: "设置默认 pull 使用 rebase"
+        code: "git config --global pull.rebase true"
+        frequency: weekly
+      - description: "查看所有配置"
+        code: "git config --list"
+        frequency: rarely
+      - description: "设置常用别名"
+        code: "git config --global alias.st status && git config --global alias.co checkout"
+        frequency: rarely
+    tips:
+      - "--global 影响所有仓库, 不加则只影响当前仓库"
+      - "推荐别名: st=status, co=checkout, br=branch, ci=commit"
+    related: ["git init", "git clone"]
+
+  - name: git clean
+    summary: "删除未跟踪的文件"
+    tags: ["清理"]
+    examples:
+      - description: "预览将要删除的文件（dry-run）"
+        code: "git clean -n"
+        frequency: weekly
+      - description: "删除未跟踪的文件"
+        code: "git clean -f"
+        danger: medium
+        frequency: weekly
+      - description: "删除未跟踪的文件和目录"
+        code: "git clean -fd"
+        danger: high
+        frequency: rarely
+      - description: "删除所有未跟踪文件（包括 .gitignore 中的）"
+        code: "git clean -fdx"
+        danger: high
+        frequency: rarely
+    tips:
+      - "先 git clean -n 预览，再执行 -f"
+      - "-x 会删除构建产物（node_modules, target/ 等）"
+    related: ["git status", "git checkout", "git reset"]

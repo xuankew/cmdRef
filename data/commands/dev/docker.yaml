@@ -1,0 +1,330 @@
+category: "Docker"
+description: "容器化开发、部署和调试命令"
+platform: dev
+commands:
+  - name: docker ps
+    summary: "查看运行中的容器"
+    tags: ["容器管理", "查看状态"]
+    examples:
+      - description: "查看运行中的容器"
+        code: "docker ps"
+        frequency: daily
+      - description: "查看所有容器（含已停止）"
+        code: "docker ps -a"
+        frequency: daily
+      - description: "只显示容器 ID"
+        code: "docker ps -q"
+        frequency: weekly
+      - description: "格式化输出（自定义列）"
+        code: "docker ps --format 'table {{.Names}}\t{{.Status}}\t{{.Ports}}'"
+        frequency: weekly
+    tips:
+      - "-a 显示所有容器（包括已退出的）"
+      - "docker ps --filter 'status=running' 按状态过滤"
+    related: ["docker run", "docker stop", "docker logs"]
+
+  - name: docker images
+    summary: "查看本地镜像列表"
+    tags: ["镜像管理"]
+    examples:
+      - description: "查看所有本地镜像"
+        code: "docker images"
+        frequency: daily
+      - description: "按名称搜索"
+        code: "docker images 'nginx*'"
+        frequency: weekly
+      - description: "只显示悬空镜像（dangling）"
+        code: "docker images -f dangling=true"
+        frequency: rarely
+    tips:
+      - "悬空镜像: 没有标签的旧镜像，可用 docker image prune 清理"
+    related: ["docker pull", "docker build", "docker rmi"]
+
+  - name: docker run
+    summary: "创建并运行容器"
+    tags: ["容器管理", "运行"]
+    examples:
+      - description: "后台运行并映射端口"
+        code: "docker run -d -p 8080:80 nginx"
+        frequency: daily
+      - description: "交互式运行（进入 shell）"
+        code: "docker run -it ubuntu /bin/bash"
+        frequency: daily
+      - description: "挂载目录并设置环境变量"
+        code: "docker run -v /host/data:/container/data -e DB_HOST=localhost mysql"
+        frequency: daily
+      - description: "指定容器名并自动删除"
+        code: "docker run --name my-nginx --rm -p 80:80 nginx"
+        frequency: weekly
+      - description: "限制资源（CPU/内存）"
+        code: "docker run --cpus=2 --memory=512m my-app"
+        frequency: weekly
+      - description: "使用自定义网络"
+        code: "docker run --network my-net --name app my-app"
+        frequency: rarely
+    tips:
+      - "-d=后台, -p=端口映射, -v=挂载, -e=环境变量"
+      - "--rm 容器退出后自动删除"
+      - "--name 指定容器名，方便后续引用"
+    related: ["docker ps", "docker exec", "docker stop"]
+
+  - name: docker build
+    summary: "从 Dockerfile 构建镜像"
+    tags: ["镜像管理", "构建"]
+    examples:
+      - description: "构建并打标签"
+        code: "docker build -t my-app:1.0 ."
+        frequency: daily
+      - description: "指定 Dockerfile 路径"
+        code: "docker build -f docker/Dockerfile -t my-app ."
+        frequency: weekly
+      - description: "不使用缓存构建"
+        code: "docker build --no-cache -t my-app ."
+        frequency: weekly
+      - description: "传递构建参数"
+        code: "docker build --build-arg VERSION=1.0 -t my-app ."
+        frequency: rarely
+    tips:
+      - "善用 .dockerignore 排除不必要的文件"
+      - "多阶段构建可以大幅减小镜像体积"
+    related: ["docker push", "docker images", "docker tag"]
+
+  - name: docker exec
+    summary: "在运行中的容器内执行命令"
+    tags: ["容器管理", "调试"]
+    examples:
+      - description: "进入容器 shell"
+        code: "docker exec -it container_name /bin/bash"
+        frequency: daily
+      - description: "执行单条命令"
+        code: "docker exec container_name ls /app"
+        frequency: daily
+      - description: "以指定用户执行"
+        code: "docker exec -u root container_name cat /etc/passwd"
+        frequency: weekly
+      - description: "查看容器环境变量"
+        code: "docker exec container_name env"
+        frequency: weekly
+    tips:
+      - "容器必须处于运行状态才能 exec"
+      - "Alpine 镜像用 /bin/sh 而不是 /bin/bash"
+    related: ["docker run", "docker logs", "docker ps"]
+
+  - name: docker logs
+    summary: "查看容器日志"
+    tags: ["容器管理", "调试", "排查问题"]
+    examples:
+      - description: "查看全部日志"
+        code: "docker logs container_name"
+        frequency: daily
+      - description: "实时跟踪日志"
+        code: "docker logs -f container_name"
+        frequency: daily
+      - description: "查看最近 100 行"
+        code: "docker logs --tail 100 container_name"
+        frequency: daily
+      - description: "查看指定时间之后的日志"
+        code: "docker logs --since 2h container_name"
+        frequency: weekly
+      - description: "显示时间戳"
+        code: "docker logs -t container_name"
+        frequency: weekly
+    tips:
+      - "-f 类似 tail -f，实时追踪"
+      - "--since 支持: 10m, 1h, 2024-01-01T00:00:00"
+    related: ["docker exec", "docker ps", "docker inspect"]
+
+  - name: docker-compose up
+    summary: "启动多容器应用（Compose）"
+    tags: ["容器编排", "运行"]
+    examples:
+      - description: "启动所有服务"
+        code: "docker-compose up"
+        frequency: daily
+      - description: "后台启动"
+        code: "docker-compose up -d"
+        frequency: daily
+      - description: "强制重建镜像"
+        code: "docker-compose up --build"
+        frequency: weekly
+      - description: "指定 compose 文件"
+        code: "docker-compose -f docker-compose.dev.yml up"
+        frequency: weekly
+      - description: "启动指定服务"
+        code: "docker-compose up api db"
+        frequency: weekly
+    tips:
+      - "V2 版本用 docker compose（无连字符）"
+      - "--build 在启动前重新构建镜像"
+    related: ["docker-compose down", "docker-compose logs", "docker run"]
+
+  - name: docker-compose down
+    summary: "停止并移除 Compose 服务"
+    tags: ["容器编排", "清理"]
+    examples:
+      - description: "停止并移除所有服务"
+        code: "docker-compose down"
+        frequency: daily
+      - description: "同时移除数据卷"
+        code: "docker-compose down -v"
+        danger: high
+        frequency: rarely
+      - description: "同时移除镜像"
+        code: "docker-compose down --rmi all"
+        danger: medium
+        frequency: rarely
+    tips:
+      - "down 比 stop 更彻底：会移除容器和网络"
+      - "-v 会删除数据卷中的持久数据"
+    related: ["docker-compose up", "docker-compose stop"]
+
+  - name: docker-compose logs
+    summary: "查看 Compose 服务日志"
+    tags: ["容器编排", "调试"]
+    examples:
+      - description: "查看所有服务日志"
+        code: "docker-compose logs"
+        frequency: daily
+      - description: "实时跟踪"
+        code: "docker-compose logs -f"
+        frequency: daily
+      - description: "查看指定服务"
+        code: "docker-compose logs -f api"
+        frequency: daily
+      - description: "查看最近 50 行"
+        code: "docker-compose logs --tail 50 api"
+        frequency: weekly
+    tips:
+      - "-f 跟踪模式下 Ctrl+C 退出"
+    related: ["docker-compose up", "docker logs"]
+
+  - name: docker cp
+    summary: "在容器和主机之间复制文件"
+    tags: ["容器管理", "文件操作"]
+    examples:
+      - description: "从容器复制到主机"
+        code: "docker cp container:/app/log.txt ./log.txt"
+        frequency: weekly
+      - description: "从主机复制到容器"
+        code: "docker cp ./config.json container:/app/config.json"
+        frequency: weekly
+      - description: "复制整个目录"
+        code: "docker cp container:/data/ ./backup/"
+        frequency: rarely
+    tips:
+      - "不需要容器处于运行状态"
+    related: ["docker exec", "docker run"]
+
+  - name: docker inspect
+    summary: "查看容器或镜像的详细元数据"
+    tags: ["容器管理", "排查问题"]
+    examples:
+      - description: "查看容器详细信息"
+        code: "docker inspect container_name"
+        frequency: weekly
+      - description: "提取 IP 地址"
+        code: "docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' container"
+        frequency: weekly
+      - description: "查看端口映射"
+        code: "docker inspect -f '{{json .NetworkSettings.Ports}}' container"
+        frequency: weekly
+      - description: "查看镜像层信息"
+        code: "docker inspect --type=image my-app"
+        frequency: rarely
+    tips:
+      - "-f (format) 配合 Go template 提取特定字段"
+    related: ["docker ps", "docker logs", "docker exec"]
+
+  - name: docker volume
+    summary: "管理数据卷"
+    tags: ["数据管理", "持久化"]
+    examples:
+      - description: "创建数据卷"
+        code: "docker volume create my-data"
+        frequency: weekly
+      - description: "列出所有数据卷"
+        code: "docker volume ls"
+        frequency: weekly
+      - description: "查看数据卷详情"
+        code: "docker volume inspect my-data"
+        frequency: rarely
+      - description: "清理未使用的数据卷"
+        code: "docker volume prune"
+        danger: medium
+        frequency: rarely
+    tips:
+      - "volume 比 bind mount 更安全、更可移植"
+      - "docker volume prune 会删除未被容器使用的卷"
+    related: ["docker run", "docker-compose"]
+
+  - name: docker network
+    summary: "管理 Docker 网络"
+    tags: ["网络管理", "容器编排"]
+    examples:
+      - description: "列出所有网络"
+        code: "docker network ls"
+        frequency: weekly
+      - description: "创建自定义网络"
+        code: "docker network create my-net"
+        frequency: weekly
+      - description: "将容器连接到网络"
+        code: "docker network connect my-net container_name"
+        frequency: rarely
+      - description: "查看网络详情"
+        code: "docker network inspect my-net"
+        frequency: rarely
+    tips:
+      - "同一网络内的容器可以用容器名互相访问"
+      - "默认 bridge 网络不支持 DNS 解析容器名"
+    related: ["docker run", "docker-compose"]
+
+  - name: docker system prune
+    summary: "清理未使用的 Docker 资源"
+    tags: ["清理", "磁盘空间"]
+    examples:
+      - description: "清理停止的容器、悬空镜像、未使用网络"
+        code: "docker system prune"
+        danger: medium
+        frequency: weekly
+      - description: "彻底清理（包括未使用的镜像）"
+        code: "docker system prune -a"
+        danger: high
+        frequency: rarely
+      - description: "清理并包含数据卷"
+        code: "docker system prune -a --volumes"
+        danger: high
+        frequency: rarely
+    tips:
+      - "先 docker system df 查看磁盘使用情况"
+      - "-a 会删除所有未被运行中容器使用的镜像"
+    related: ["docker images", "docker ps", "docker volume"]
+
+  - name: docker tag
+    summary: "给镜像打标签"
+    tags: ["镜像管理", "发布"]
+    examples:
+      - description: "给镜像打新标签"
+        code: "docker tag my-app:latest registry.example.com/my-app:1.0"
+        frequency: weekly
+      - description: "给本地镜像打远程仓库标签"
+        code: "docker tag my-app:1.0 docker.io/username/my-app:1.0"
+        frequency: weekly
+    tips:
+      - "tag 只是创建别名，不会复制镜像"
+      - "推送前需要先 tag 为远程仓库地址"
+    related: ["docker push", "docker build", "docker images"]
+
+  - name: docker push
+    summary: "推送镜像到远程仓库"
+    tags: ["镜像管理", "发布"]
+    examples:
+      - description: "推送镜像"
+        code: "docker push registry.example.com/my-app:1.0"
+        frequency: weekly
+      - description: "推送到 Docker Hub"
+        code: "docker push username/my-app:latest"
+        frequency: weekly
+    tips:
+      - "推送前需要先 docker login 登录"
+      - "推送后其他人可以 docker pull 使用"
+    related: ["docker pull", "docker tag", "docker build"]

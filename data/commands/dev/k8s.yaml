@@ -1,0 +1,260 @@
+category: "Kubernetes"
+description: "kubectl 集群管理核心命令"
+platform: dev
+commands:
+  - name: kubectl get
+    summary: "查看资源信息"
+    tags: ["查看状态", "资源管理"]
+    examples:
+      - description: "查看所有 Pod"
+        code: "kubectl get pods"
+        frequency: daily
+      - description: "查看所有命名空间的 Pod"
+        code: "kubectl get pods -A"
+        frequency: daily
+      - description: "查看 Service"
+        code: "kubectl get svc"
+        frequency: daily
+      - description: "查看 Deployment"
+        code: "kubectl get deployments"
+        frequency: daily
+      - description: "以 wide 格式输出（更多列）"
+        code: "kubectl get pods -o wide"
+        frequency: daily
+      - description: "以 YAML 格式输出"
+        code: "kubectl get pod my-pod -o yaml"
+        frequency: weekly
+      - description: "查看 Node 信息"
+        code: "kubectl get nodes"
+        frequency: weekly
+      - description: "查看所有事件（按时间排序）"
+        code: "kubectl get events --sort-by=.lastTimestamp"
+        frequency: weekly
+    tips:
+      - "-n namespace 指定命名空间"
+      - "-o wide/yaml/json 控制输出格式"
+      - "-l app=nginx 按标签过滤"
+    related: ["kubectl describe", "kubectl logs", "kubectl apply"]
+
+  - name: kubectl describe
+    summary: "查看资源的详细信息"
+    tags: ["查看状态", "排查问题"]
+    examples:
+      - description: "查看 Pod 详情"
+        code: "kubectl describe pod my-pod"
+        frequency: daily
+      - description: "查看 Deployment 详情"
+        code: "kubectl describe deployment my-deploy"
+        frequency: weekly
+      - description: "查看 Node 详情"
+        code: "kubectl describe node node-1"
+        frequency: rarely
+    tips:
+      - "查看 Events 部分是排查问题的关键"
+      - "describe 比 get 信息更全面，包含事件历史"
+    related: ["kubectl get", "kubectl logs", "kubectl events"]
+
+  - name: kubectl logs
+    summary: "查看 Pod 日志"
+    tags: ["调试", "排查问题"]
+    examples:
+      - description: "查看 Pod 日志"
+        code: "kubectl logs my-pod"
+        frequency: daily
+      - description: "实时跟踪日志"
+        code: "kubectl logs -f my-pod"
+        frequency: daily
+      - description: "查看最近 100 行"
+        code: "kubectl logs --tail=100 my-pod"
+        frequency: daily
+      - description: "多容器 Pod 指定容器"
+        code: "kubectl logs my-pod -c sidecar"
+        frequency: weekly
+      - description: "查看上一个崩溃容器的日志"
+        code: "kubectl logs my-pod --previous"
+        frequency: weekly
+      - description: "按标签查看多个 Pod 的日志"
+        code: "kubectl logs -l app=nginx --tail=50"
+        frequency: weekly
+    tips:
+      - "--previous (-p) 查看上一个容器的日志（崩溃排查）"
+      - "多容器 Pod 必须用 -c 指定容器名"
+    related: ["kubectl get", "kubectl describe", "kubectl exec"]
+
+  - name: kubectl exec
+    summary: "在 Pod 中执行命令"
+    tags: ["调试", "容器管理"]
+    examples:
+      - description: "进入 Pod shell"
+        code: "kubectl exec -it my-pod -- /bin/sh"
+        frequency: daily
+      - description: "执行单条命令"
+        code: "kubectl exec my-pod -- ls /app"
+        frequency: daily
+      - description: "指定容器"
+        code: "kubectl exec -it my-pod -c sidecar -- /bin/sh"
+        frequency: weekly
+    tips:
+      - "类似 docker exec，在容器内调试"
+      - "Alpine 镜像用 /bin/sh，非 Alpine 用 /bin/bash"
+    related: ["kubectl logs", "kubectl get", "kubectl port-forward"]
+
+  - name: kubectl apply
+    summary: "应用配置文件（创建/更新资源）"
+    tags: ["部署", "资源管理"]
+    examples:
+      - description: "应用单个文件"
+        code: "kubectl apply -f deployment.yaml"
+        frequency: daily
+      - description: "应用目录下所有文件"
+        code: "kubectl apply -f ./k8s/"
+        frequency: daily
+      - description: "应用远程 URL"
+        code: "kubectl apply -f https://example.com/deployment.yaml"
+        frequency: rarely
+      - description: "预览变更（dry-run）"
+        code: "kubectl apply -f deployment.yaml --dry-run=client"
+        frequency: weekly
+    tips:
+      - "apply 是声明式的：重复执行只应用差异"
+      - "--dry-run=client -o yaml 用于生成 YAML 模板"
+    related: ["kubectl get", "kubectl delete", "kubectl diff"]
+
+  - name: kubectl delete
+    summary: "删除资源"
+    tags: ["资源管理", "清理"]
+    examples:
+      - description: "删除 Pod"
+        code: "kubectl delete pod my-pod"
+        frequency: daily
+      - description: "删除 Deployment"
+        code: "kubectl delete deployment my-deploy"
+        frequency: weekly
+      - description: "按文件删除"
+        code: "kubectl delete -f deployment.yaml"
+        frequency: weekly
+      - description: "按标签删除"
+        code: "kubectl delete pods -l app=old-app"
+        danger: medium
+        frequency: rarely
+      - description: "删除所有 Pod（当前命名空间）"
+        code: "kubectl delete pods --all"
+        danger: high
+        frequency: rarely
+    tips:
+      - "--grace-period=0 --force 强制删除卡住的 Pod"
+      - "delete 是立即生效的，请确认目标"
+    related: ["kubectl apply", "kubectl get"]
+
+  - name: kubectl port-forward
+    summary: "端口转发（本地访问集群服务）"
+    tags: ["调试", "网络"]
+    examples:
+      - description: "转发 Pod 端口到本地"
+        code: "kubectl port-forward pod/my-pod 8080:80"
+        frequency: daily
+      - description: "转发 Service 端口"
+        code: "kubectl port-forward svc/my-service 3000:80"
+        frequency: daily
+      - description: "监听所有接口（允许外部访问）"
+        code: "kubectl port-forward --address 0.0.0.0 svc/my-service 8080:80"
+        frequency: weekly
+    tips:
+      - "本地访问 http://localhost:8080"
+      - "Ctrl+C 停止转发"
+    related: ["kubectl exec", "kubectl get"]
+
+  - name: kubectl rollout
+    summary: "管理 Deployment 的滚动更新"
+    tags: ["部署", "发布", "回滚"]
+    examples:
+      - description: "查看滚动更新状态"
+        code: "kubectl rollout status deployment/my-deploy"
+        frequency: daily
+      - description: "查看更新历史"
+        code: "kubectl rollout history deployment/my-deploy"
+        frequency: weekly
+      - description: "回滚到上一版本"
+        code: "kubectl rollout undo deployment/my-deploy"
+        frequency: weekly
+      - description: "回滚到指定版本"
+        code: "kubectl rollout undo deployment/my-deploy --to-revision=3"
+        frequency: rarely
+      - description: "重启 Deployment（触发重新部署）"
+        code: "kubectl rollout restart deployment/my-deploy"
+        frequency: weekly
+    tips:
+      - "rollout restart 会触发滚动更新，不修改配置"
+      - "record=true 在历史中记录命令原因"
+    related: ["kubectl apply", "kubectl get", "kubectl describe"]
+
+  - name: kubectl scale
+    summary: "调整副本数"
+    tags: ["资源管理", "扩缩容"]
+    examples:
+      - description: "扩容到 5 个副本"
+        code: "kubectl scale deployment/my-deploy --replicas=5"
+        frequency: weekly
+      - description: "缩容到 0"
+        code: "kubectl scale deployment/my-deploy --replicas=0"
+        frequency: weekly
+    tips:
+      - "生产环境推荐用 HPA（Horizontal Pod Autoscaler）自动扩缩"
+    related: ["kubectl get", "kubectl apply"]
+
+  - name: kubectl top
+    summary: "查看资源使用情况（需要 metrics-server）"
+    tags: ["监控", "性能"]
+    examples:
+      - description: "查看 Pod 资源使用"
+        code: "kubectl top pods"
+        frequency: weekly
+      - description: "查看所有命名空间的 Pod 资源"
+        code: "kubectl top pods -A"
+        frequency: weekly
+      - description: "查看 Node 资源使用"
+        code: "kubectl top nodes"
+        frequency: weekly
+    tips:
+      - "需要安装 metrics-server"
+      - "配合 HPA 实现自动扩缩容"
+    related: ["kubectl get", "kubectl describe"]
+
+  - name: kubectl config
+    summary: "管理 kubeconfig 配置"
+    tags: ["配置", "集群管理"]
+    examples:
+      - description: "查看当前上下文"
+        code: "kubectl config current-context"
+        frequency: daily
+      - description: "切换上下文"
+        code: "kubectl config use-context my-cluster"
+        frequency: daily
+      - description: "查看所有上下文"
+        code: "kubectl config get-contexts"
+        frequency: weekly
+      - description: "设置默认命名空间"
+        code: "kubectl config set-context --current --namespace=production"
+        frequency: weekly
+    tips:
+      - "多个集群时通过 context 切换"
+      - "推荐使用 kubectx / kubens 简化操作"
+    related: ["kubectl get"]
+
+  - name: kubectl debug
+    summary: "调试 Pod / Node（K8s 1.25+）"
+    tags: ["调试", "排查问题"]
+    examples:
+      - description: "给 Pod 添加临时调试容器"
+        code: "kubectl debug -it my-pod --image=busybox --target=my-container"
+        frequency: rarely
+      - description: "以 root 用户复制 Pod 进行调试"
+        code: "kubectl debug my-pod -it --copy-to=my-debug -- /bin/sh"
+        frequency: rarely
+      - description: "调试 Node"
+        code: "kubectl debug node/node-1 -it --image=ubuntu"
+        frequency: rarely
+    tips:
+      - "适合调试 distroless 镜像（没有 shell 的容器）"
+      - "调试 Pod 用完记得删除"
+    related: ["kubectl exec", "kubectl logs", "kubectl describe"]

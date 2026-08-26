@@ -1,0 +1,191 @@
+category: "数据库"
+description: "MySQL, PostgreSQL, Redis, MongoDB 常用命令"
+platform: dev
+commands:
+  - name: mysql
+    summary: "MySQL 客户端连接与操作"
+    tags: ["数据库", "MySQL", "连接"]
+    examples:
+      - description: "连接 MySQL"
+        code: "mysql -u root -p"
+        frequency: daily
+      - description: "指定主机和端口连接"
+        code: "mysql -h 127.0.0.1 -P 3306 -u root -p"
+        frequency: daily
+      - description: "执行 SQL 文件"
+        code: "mysql -u root -p mydb < backup.sql"
+        frequency: weekly
+      - description: "导出数据库"
+        code: "mysqldump -u root -p mydb > backup.sql"
+        frequency: weekly
+      - description: "只导出表结构"
+        code: "mysqldump -u root -p --no-data mydb > schema.sql"
+        frequency: rarely
+      - description: "查看所有数据库"
+        code: "SHOW DATABASES;"
+        frequency: daily
+      - description: "查看表结构"
+        code: "DESCRIBE table_name;"
+        frequency: daily
+    tips:
+      - "-p 后面不跟密码会交互式输入（更安全）"
+      - "mysqldump --single-transaction 避免锁表"
+    related: ["mysqldump", "psql", "redis-cli"]
+
+  - name: psql
+    summary: "PostgreSQL 客户端连接与操作"
+    tags: ["数据库", "PostgreSQL", "连接"]
+    examples:
+      - description: "连接 PostgreSQL"
+        code: "psql -U postgres -d mydb"
+        frequency: daily
+      - description: "指定主机和端口"
+        code: "psql -h localhost -p 5432 -U postgres -d mydb"
+        frequency: daily
+      - description: "执行 SQL 文件"
+        code: "psql -U postgres -d mydb -f backup.sql"
+        frequency: weekly
+      - description: "导出数据库"
+        code: "pg_dump -U postgres mydb > backup.sql"
+        frequency: weekly
+      - description: "列出所有数据库"
+        code: "\\l"
+        frequency: daily
+      - description: "列出所有表"
+        code: "\\dt"
+        frequency: daily
+      - description: "查看表结构"
+        code: "\\d table_name"
+        frequency: daily
+      - description: "查看索引"
+        code: "\\di"
+        frequency: weekly
+    tips:
+      - "\\ 开头的命令是 psql 的元命令"
+      - "pg_dump -Fc 输出自定义格式，可用 pg_restore 恢复"
+    related: ["pg_dump", "pg_restore", "mysql"]
+
+  - name: redis-cli
+    summary: "Redis 命令行客户端"
+    tags: ["数据库", "Redis", "缓存"]
+    examples:
+      - description: "连接 Redis"
+        code: "redis-cli"
+        frequency: daily
+      - description: "指定主机和端口"
+        code: "redis-cli -h 127.0.0.1 -p 6379"
+        frequency: daily
+      - description: "带密码连接"
+        code: "redis-cli -a yourpassword"
+        frequency: daily
+      - description: "设置和获取键值"
+        code: "SET mykey 'hello' && GET mykey"
+        frequency: daily
+      - description: "查看所有键"
+        code: "KEYS *"
+        danger: medium
+        frequency: weekly
+      - description: "查看键的数量"
+        code: "DBSIZE"
+        frequency: weekly
+      - description: "设置过期时间（秒）"
+        code: "SETEX mykey 3600 'value'"
+        frequency: weekly
+      - description: "查看键的剩余生存时间"
+        code: "TTL mykey"
+        frequency: weekly
+      - description: "清空当前数据库"
+        code: "FLUSHDB"
+        danger: high
+        frequency: rarely
+      - description: "查看服务器信息"
+        code: "INFO"
+        frequency: weekly
+    tips:
+      - "生产环境不要用 KEYS *，用 SCAN 代替"
+      - "redis-cli -h host -p port -a password"
+    related: ["redis-server", "mysql", "mongosh"]
+
+  - name: mongosh
+    summary: "MongoDB Shell 客户端"
+    tags: ["数据库", "MongoDB", "NoSQL"]
+    examples:
+      - description: "连接 MongoDB"
+        code: "mongosh"
+        frequency: daily
+      - description: "连接指定地址"
+        code: "mongosh 'mongodb://localhost:27017/mydb'"
+        frequency: daily
+      - description: "带认证连接"
+        code: "mongosh -u admin -p --authenticationDatabase admin"
+        frequency: daily
+      - description: "查看所有数据库"
+        code: "show dbs"
+        frequency: daily
+      - description: "切换/创建数据库"
+        code: "use mydb"
+        frequency: daily
+      - description: "查看集合"
+        code: "show collections"
+        frequency: daily
+      - description: "查询文档"
+        code: "db.users.find({ age: { $gt: 25 } })"
+        frequency: daily
+      - description: "插入文档"
+        code: "db.users.insertOne({ name: 'Alice', age: 30 })"
+        frequency: daily
+      - description: "统计文档数"
+        code: "db.users.countDocuments()"
+        frequency: weekly
+      - description: "导出集合"
+        code: "mongodump --db mydb --collection users --out backup/"
+        frequency: weekly
+    tips:
+      - "find() 返回游标，加 .pretty() 格式化输出"
+      - "mongodump/mongorestore 用于备份和恢复"
+    related: ["mongodump", "mongorestore", "redis-cli"]
+
+  - name: sqlite3
+    summary: "SQLite 命令行工具"
+    tags: ["数据库", "SQLite", "轻量数据库"]
+    examples:
+      - description: "打开/创建数据库"
+        code: "sqlite3 mydb.db"
+        frequency: weekly
+      - description: "执行 SQL 查询"
+        code: "sqlite3 mydb.db 'SELECT * FROM users;'"
+        frequency: weekly
+      - description: "导入 CSV 文件"
+        code: "sqlite3 mydb.db '.import data.csv users'"
+        frequency: rarely
+      - description: "导出为 CSV"
+        code: "sqlite3 mydb.db '.mode csv' '.output out.csv' 'SELECT * FROM users;'"
+        frequency: rarely
+      - description: "查看所有表"
+        code: ".tables"
+        frequency: weekly
+      - description: "查看表结构"
+        code: ".schema table_name"
+        frequency: weekly
+    tips:
+      - ".help 查看所有点命令"
+      - "SQLite 无需服务器，直接操作文件"
+    related: ["mysql", "psql"]
+
+  - name: createdb / dropdb
+    summary: "PostgreSQL 创建/删除数据库"
+    tags: ["数据库", "PostgreSQL"]
+    examples:
+      - description: "创建数据库"
+        code: "createdb -U postgres newdb"
+        frequency: weekly
+      - description: "删除数据库"
+        code: "dropdb -U postgres olddb"
+        danger: high
+        frequency: rarely
+      - description: "从模板创建"
+        code: "createdb -T template0 -U postgres newdb"
+        frequency: rarely
+    tips:
+      - "dropdb 不可逆，删除前确认备份"
+    related: ["psql", "pg_dump"]

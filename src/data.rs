@@ -6,6 +6,12 @@ use std::collections::BTreeMap;
 pub struct Example {
     pub description: String,
     pub code: String,
+    /// 使用频率: daily / weekly / rarely
+    #[serde(default)]
+    pub frequency: String,
+    /// 危险等级: high / medium / none
+    #[serde(default)]
+    pub danger: String,
 }
 
 /// 命令定义
@@ -19,6 +25,9 @@ pub struct Command {
     pub tips: Vec<String>,
     #[serde(default)]
     pub related: Vec<String>,
+    /// 场景标签，用于按场景检索
+    #[serde(default)]
+    pub tags: Vec<String>,
 }
 
 /// 单个 YAML 文件的数据结构
@@ -75,6 +84,7 @@ pub fn load_all_data() -> Vec<Platform> {
         ("linux", "Linux", include_str!("../data/commands/linux/system.yaml")),
         ("linux", "Linux", include_str!("../data/commands/linux/log_view.yaml")),
         ("linux", "Linux", include_str!("../data/commands/linux/user_mgmt.yaml")),
+        ("linux", "Linux", include_str!("../data/commands/linux/systemd.yaml")),
         // Mac
         ("mac", "macOS", include_str!("../data/commands/mac/brew.yaml")),
         ("mac", "macOS", include_str!("../data/commands/mac/system.yaml")),
@@ -83,6 +93,12 @@ pub fn load_all_data() -> Vec<Platform> {
         ("windows", "Windows", include_str!("../data/commands/windows/powershell.yaml")),
         ("windows", "Windows", include_str!("../data/commands/windows/cmd.yaml")),
         ("windows", "Windows", include_str!("../data/commands/windows/winget.yaml")),
+        // Dev Tools
+        ("dev", "Dev Tools", include_str!("../data/commands/dev/git.yaml")),
+        ("dev", "Dev Tools", include_str!("../data/commands/dev/docker.yaml")),
+        ("dev", "Dev Tools", include_str!("../data/commands/dev/database.yaml")),
+        ("dev", "Dev Tools", include_str!("../data/commands/dev/k8s.yaml")),
+        ("dev", "Dev Tools", include_str!("../data/commands/dev/json_yaml.yaml")),
         // Testing
         ("testing", "Testing", include_str!("../data/commands/testing/adb.yaml")),
         ("testing", "Testing", include_str!("../data/commands/testing/ios.yaml")),
@@ -145,6 +161,7 @@ fn merge_custom_commands(platforms: &mut Vec<Platform>) {
         ("mac", "macOS"),
         ("windows", "Windows"),
         ("testing", "Testing"),
+        ("dev", "Dev Tools"),
     ];
 
     let entries = match std::fs::read_dir(&custom_dir) {

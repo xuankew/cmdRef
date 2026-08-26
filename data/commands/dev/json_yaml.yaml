@@ -1,0 +1,71 @@
+category: "数据处理"
+description: "jq, yq, xmllint 等结构化数据处理工具"
+platform: dev
+commands:
+  - name: jq
+    summary: "JSON 数据查询和转换（必备）"
+    tags: ["JSON", "API 测试", "数据处理"]
+    examples:
+      - description: "格式化 JSON（美化输出）"
+        code: "echo '{\"a\":1}' | jq ."
+        frequency: daily
+      - description: "提取字段"
+        code: "echo '{\"name\":\"Alice\",\"age\":30}' | jq '.name'"
+        frequency: daily
+      - description: "提取数组元素"
+        code: "echo '[1,2,3]' | jq '.[0]'"
+        frequency: daily
+      - description: "遍历数组"
+        code: "echo '[{\"n\":\"a\"},{\"n\":\"b\"}]' | jq '.[].n'"
+        frequency: daily
+      - description: "配合 curl 使用"
+        code: "curl -s https://api.example.com/data | jq '.items[].name'"
+        frequency: daily
+      - description: "过滤和映射"
+        code: "cat data.json | jq '.users[] | select(.age > 25) | .name'"
+        frequency: weekly
+      - description: "转换为 CSV"
+        code: "cat data.json | jq -r '.[] | [.name, .age] | @csv'"
+        frequency: rarely
+      - description: "统计数组长度"
+        code: "cat data.json | jq '.items | length'"
+        frequency: weekly
+      - description: "提取 keys"
+        code: "cat data.json | jq 'keys'"
+        frequency: weekly
+      - description: "原地编辑（类似 sed）"
+        code: "jq '.version = \"2.0\"' package.json > tmp && mv tmp package.json"
+        frequency: weekly
+    tips:
+      - "-r 输出原始字符串（不带引号）"
+      - "-c 紧凑输出（单行）"
+      - "jq 是 API 测试和日志分析的必备工具"
+    related: ["curl", "yq", "grep"]
+
+  - name: yq
+    summary: "YAML 数据查询和转换"
+    tags: ["YAML", "配置管理", "数据处理"]
+    examples:
+      - description: "读取 YAML 字段"
+        code: "yq '.name' config.yaml"
+        frequency: weekly
+      - description: "将 YAML 转为 JSON"
+        code: "yq -o=json config.yaml"
+        frequency: weekly
+      - description: "将 JSON 转为 YAML"
+        code: "yq -P config.json"
+        frequency: weekly
+      - description: "修改 YAML 字段"
+        code: "yq -i '.version = \"2.0\"' config.yaml"
+        frequency: weekly
+      - description: "删除字段"
+        code: "yq -i 'del(.unwanted)' config.yaml"
+        frequency: rarely
+      - description: "合并多个 YAML"
+        code: "yq eval-all 'select(fileIndex == 0) * select(fileIndex == 1)' base.yaml override.yaml"
+        frequency: rarely
+    tips:
+      - "mikefarah/yq (Go 版) 是目前主流版本"
+      - "-i 原地编辑（直接修改文件）"
+      - "k8s 资源 YAML 编辑必备"
+    related: ["jq", "kubectl"]

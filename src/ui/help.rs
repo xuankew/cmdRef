@@ -39,7 +39,7 @@ pub fn draw(frame: &mut Frame, app: &App, area: Rect) {
                 Span::raw(":历史  "),
                 Span::styled("/", Style::default().fg(Color::Yellow).add_modifier(Modifier::BOLD)),
                 Span::raw(":搜索  "),
-                Span::styled("1-4", Style::default().fg(Color::Yellow).add_modifier(Modifier::BOLD)),
+                Span::styled("1-5", Style::default().fg(Color::Yellow).add_modifier(Modifier::BOLD)),
                 Span::raw(":跳转  "),
                 Span::styled("q", Style::default().fg(Color::Yellow).add_modifier(Modifier::BOLD)),
                 Span::raw(":退出  "),
