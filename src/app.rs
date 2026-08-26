@@ -196,21 +196,49 @@ impl App {
         if let Some(item) = self.current_sidebar_item() {
             match item.kind {
                 SidebarItemKind::Bookmarks | SidebarItemKind::History => {
-                    self.selected_command = Some(0);
-                    self.content_cursor = 0;
+                    // 保留已选中的命令索引，仅在越界时重置
+                    let len = if item.kind == SidebarItemKind::Bookmarks {
+                        self.bookmarks.count()
+                    } else {
+                        self.history.count()
+                    };
+                    if let Some(idx) = self.selected_command {
+                        if idx >= len {
+                            self.selected_command = if len > 0 { Some(0) } else { None };
+                        }
+                    } else {
+                        self.selected_command = if len > 0 { Some(0) } else { None };
+                    }
+                    self.content_cursor = self.selected_command.unwrap_or(0);
                 }
                 SidebarItemKind::Platform => {
                     let pi = item.platform_index;
                     if let Some(platform) = self.platforms.get(pi) {
-                        if let Some(_cat) = platform.categories.first() {
-                            self.selected_command = Some(0);
-                            self.content_cursor = 0;
+                        if let Some(cat) = platform.categories.first() {
+                            // 保留已选中的命令索引，仅在越界时重置
+                            let len = cat.commands.len();
+                            if let Some(idx) = self.selected_command {
+                                if idx >= len {
+                                    self.selected_command = Some(0);
+                                }
+                            } else {
+                                self.selected_command = Some(0);
+                            }
+                            self.content_cursor = self.selected_command.unwrap_or(0);
                         }
                     }
                 }
                 SidebarItemKind::Category => {
-                    self.selected_command = Some(0);
-                    self.content_cursor = 0;
+                    // 保留已选中的命令索引，仅在越界时重置
+                    let len = self.current_category_commands().len();
+                    if let Some(idx) = self.selected_command {
+                        if idx >= len {
+                            self.selected_command = Some(0);
+                        }
+                    } else {
+                        self.selected_command = Some(0);
+                    }
+                    self.content_cursor = self.selected_command.unwrap_or(0);
                 }
             }
         }

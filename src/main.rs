@@ -203,41 +203,48 @@ fn handle_mouse_click(app: &mut App, col: u16, row: u16, size: ratatui::prelude:
     let width = size.width;
 
     // 布局计算（与 ui/layout.rs 一致）
-    let title_row = 0u16;
-    let help_row = height.saturating_sub(1);
-    let main_top = title_row + 1;
-    let main_bottom = help_row;
+    // Row 0: 标题栏
+    // Row 1 ~ height-2: 主内容区 (sidebar 25% + content 75%)
+    // Row height-1: 帮助栏
+    let main_top: u16 = 1;
+    let main_bottom: u16 = height.saturating_sub(1);
 
     // 不在主区域内则忽略
     if row < main_top || row >= main_bottom {
         return;
     }
 
+    // Ratatui Percentage(25) 的实际计算
     let sidebar_width = width * 25 / 100;
 
-    // 点击侧边栏
+    // 点击侧边栏 (sidebar Block 占满整个 sidebar_width)
     if col < sidebar_width {
         app.focus = Focus::Sidebar;
-        // 侧边栏有 1 行 border，内部从 main_top+1 开始
+        // sidebar Block 有 border: 上 border 1 行，内部从 main_top + 1 开始
         let inner_row = row.saturating_sub(main_top + 1);
         let cursor = inner_row as usize;
         if cursor < app.sidebar_items.len() {
             app.sidebar_cursor = cursor;
+            app.selected_command = Some(0);
+            app.content_cursor = 0;
             app.update_selection();
         }
         return;
     }
 
-    // 点击内容区域
+    // 点击内容区域 (content Block 从 sidebar_width 开始)
     let content_left = sidebar_width;
-    let content_width = width - sidebar_width;
-    let cmd_list_width = content_width * 30 / 100;
+    // content Block 有 border: 上 1 行 + 下 1 行，内部区域从 main_top + 1 开始
+    // 内部分为: 命令列表 (30%) + 详情 (70%)
+    let content_inner_width = width - content_left - 2; // 减去左右 border
+    let cmd_list_width = content_inner_width * 30 / 100;
+    let cmd_list_left = content_left + 1; // 跳过 content 左 border
 
-    // 点击命令列表区域（左侧 30%）
-    if col < content_left + cmd_list_width {
+    // 点击命令列表区域
+    if col >= cmd_list_left && col < cmd_list_left + cmd_list_width {
         app.focus = Focus::Content;
-        // 命令列表有 border (1行) + 列表项从第 2 行开始
-        let inner_row = row.saturating_sub(main_top + 1);
+        // 命令列表项从 content inner 的第一行开始 = main_top + 1 + 1(border)
+        let inner_row = row.saturating_sub(main_top + 2);
         let idx = inner_row as usize;
         let len = app.current_category_commands().len();
         if len > 0 && idx < len {
