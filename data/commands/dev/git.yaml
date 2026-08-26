@@ -560,3 +560,45 @@ commands:
       - "先 git clean -n 预览，再执行 -f"
       - "-x 会删除构建产物（node_modules, target/ 等）"
     related: ["git status", "git checkout", "git reset"]
+
+  - name: SSH 配置
+    summary: "配置 Git SSH 密钥认证（连接 GitHub/GitLab）"
+    tags: ["初始化", "配置", "SSH", "认证"]
+    examples:
+      - description: "生成 ED25519 密钥对（推荐）"
+        code: "ssh-keygen -t ed25519 -C 'your_email@example.com'"
+        frequency: weekly
+      - description: "生成 RSA 4096 密钥（兼容旧系统）"
+        code: "ssh-keygen -t rsa -b 4096 -C 'your_email@example.com'"
+        frequency: rarely
+      - description: "启动 ssh-agent 并添加密钥"
+        code: "eval \"$(ssh-agent -s)\" && ssh-add ~/.ssh/id_ed25519"
+        frequency: weekly
+      - description: "复制公钥到剪贴板（macOS）"
+        code: "pbcopy < ~/.ssh/id_ed25519.pub"
+        frequency: weekly
+      - description: "复制公钥到剪贴板（Linux）"
+        code: "xclip -sel clip < ~/.ssh/id_ed25519.pub"
+        frequency: weekly
+      - description: "查看公钥内容"
+        code: "cat ~/.ssh/id_ed25519.pub"
+        frequency: weekly
+      - description: "测试 GitHub SSH 连接"
+        code: "ssh -T git@github.com"
+        frequency: weekly
+      - description: "测试 GitLab SSH 连接"
+        code: "ssh -T git@gitlab.com"
+        frequency: rarely
+      - description: "切换仓库为 SSH 远程地址"
+        code: "git remote set-url origin git@github.com:user/repo.git"
+        frequency: weekly
+      - description: "配置 ~/.ssh/config 多账号"
+        code: "cat >> ~/.ssh/config << 'EOF'\nHost github.com\n  HostName github.com\n  User git\n  IdentityFile ~/.ssh/id_ed25519\nHost gitlab.com\n  HostName gitlab.com\n  User git\n  IdentityFile ~/.ssh/id_ed25519_work\nEOF"
+        frequency: rarely
+    tips:
+      - "生成密钥时密码可以留空（方便 CI/CD），但建议设置"
+      - "公钥（.pub）添加到 GitHub → Settings → SSH keys"
+      - "私钥绝不能分享给任何人"
+      - "多账号场景用 ~/.ssh/config 区分不同 IdentityFile"
+      - "macOS Keychain 自动管理: ssh-add --apple-use-keychain"
+    related: ["git remote", "git config", "git clone"]
