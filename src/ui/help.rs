@@ -8,8 +8,6 @@ pub fn draw(frame: &mut Frame, app: &App, area: Rect) {
         Focus::Content => Paragraph::new(Line::from(vec![
             Span::styled(" ↑/↓", Style::default().fg(Color::Yellow).add_modifier(Modifier::BOLD)),
             Span::raw(":导航  "),
-            Span::styled("y", Style::default().fg(Color::Yellow).add_modifier(Modifier::BOLD)),
-            Span::raw(":复制  "),
             Span::styled("b", Style::default().fg(Color::Yellow).add_modifier(Modifier::BOLD)),
             Span::raw(":收藏  "),
             Span::styled("←", Style::default().fg(Color::Yellow).add_modifier(Modifier::BOLD)),

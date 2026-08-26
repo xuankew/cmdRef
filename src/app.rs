@@ -422,6 +422,7 @@ impl App {
     // ======== 功能操作 ========
 
     /// 复制当前命令的第一个示例代码到剪贴板
+    #[allow(dead_code)]
     pub fn copy_current_command(&mut self) {
         if let Some(cmd) = self.current_command() {
             debug_log!("copy_current_command: {}", cmd.name);
@@ -651,11 +652,13 @@ impl App {
             let target_pi = result.platform_index;
             let target_ci = result.category_index;
 
+            // 先将 cursor 定位到目标平台，再展开
             let mut found_platform = false;
-            for item in self.sidebar_items.iter() {
+            for (i, item) in self.sidebar_items.iter().enumerate() {
                 if item.kind == SidebarItemKind::Platform && item.platform_index == target_pi {
+                    self.sidebar_cursor = i;
                     if !item.expanded {
-                        self.toggle_sidebar_item();
+                        self.toggle_sidebar_item(); // 展开，cursor 已指向该平台
                     }
                     found_platform = true;
                     break;
@@ -666,6 +669,7 @@ impl App {
                 return;
             }
 
+            // 定位到目标分类
             for (i, item) in self.sidebar_items.iter().enumerate() {
                 if item.kind == SidebarItemKind::Category
                     && item.platform_index == target_pi

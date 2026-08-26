@@ -14,7 +14,7 @@ use std::time::Duration;
 
 use clap::Parser;
 use crossterm::{
-    event::{self, DisableMouseCapture, EnableMouseCapture, Event, KeyCode, KeyModifiers, MouseEventKind},
+    event::{self, Event, KeyCode, KeyModifiers},
     execute,
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
@@ -72,7 +72,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // 设置终端
     enable_raw_mode()?;
     let mut stdout = io::stdout();
-    execute!(stdout, EnterAlternateScreen, EnableMouseCapture)?;
+    execute!(stdout, EnterAlternateScreen)?;
     let backend = CrosstermBackend::new(stdout);
     let mut terminal = Terminal::new(backend)?;
 
@@ -84,7 +84,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     execute!(
         terminal.backend_mut(),
         LeaveAlternateScreen,
-        DisableMouseCapture
     )?;
     terminal.show_cursor()?;
 
@@ -118,16 +117,6 @@ fn run_app(
 
                     if app.should_quit {
                         return Ok(());
-                    }
-                }
-                Event::Mouse(mouse) => {
-                    let sz = terminal.size()?;
-                    let area = ratatui::prelude::Rect::new(0, 0, sz.width, sz.height);
-                    match mouse.kind {
-                        MouseEventKind::Down(crossterm::event::MouseButton::Left) => {
-                            handle_mouse_click(app, mouse.column, mouse.row, area);
-                        }
-                        _ => {}
                     }
                 }
                 _ => {}
@@ -165,7 +154,6 @@ fn handle_normal_input(app: &mut App, key: KeyCode, _modifiers: KeyModifiers) {
                 KeyCode::Char('k') | KeyCode::Up => app.move_content_up(),
                 KeyCode::Left | KeyCode::Tab => app.switch_focus(),
                 KeyCode::Char('/') => app.enter_search_mode(),
-                KeyCode::Char('y') => app.copy_current_command(),
                 KeyCode::Char('b') => app.toggle_bookmark(),
                 KeyCode::Char('B') => app.jump_to_bookmarks(),
                 KeyCode::Char('H') => app.jump_to_history(),
@@ -193,63 +181,5 @@ fn handle_search_input(app: &mut App, key: KeyCode, _modifiers: KeyModifiers) {
         KeyCode::Backspace => app.search_backspace(),
         KeyCode::Char(c) => app.search_input(c),
         _ => {}
-    }
-}
-
-/// 处理鼠标左键点击事件
-fn handle_mouse_click(app: &mut App, col: u16, row: u16, size: ratatui::prelude::Rect) {
-    if app.mode == AppMode::Search {
-        return;
-    }
-
-    let height = size.height;
-    let width = size.width;
-
-    debug_log!("mouse click: col={}, row={}, size={}x{}", col, row, width, height);
-
-    // Row 0: 标题栏, Row 1~height-2: 主内容区, Row height-1: 帮助栏
-    let main_top: u16 = 1;
-    let main_bottom: u16 = height.saturating_sub(1);
-
-    if row < main_top || row >= main_bottom {
-        debug_log!("  -> outside main area");
-        return;
-    }
-
-    // 用浮点运算匹配 Ratatui 的 Percentage 布局
-    let sidebar_width = (width as f64 * 0.25) as u16;
-    debug_log!("  sidebar_width={}", sidebar_width);
-
-    // 点击侧边栏
-    if col < sidebar_width {
-        app.focus = Focus::Sidebar;
-        let inner_row = row.saturating_sub(main_top + 1);
-        let cursor = inner_row as usize;
-        debug_log!("  -> sidebar click: inner_row={}, cursor={}", inner_row, cursor);
-        if cursor < app.sidebar_items.len() {
-            app.sidebar_cursor = cursor;
-            app.selected_command = Some(0);
-            app.content_cursor = 0;
-            app.update_selection();
-        }
-        return;
-    }
-
-    // 点击内容区域
-    let content_left = sidebar_width;
-
-    if col >= content_left {
-        app.focus = Focus::Content;
-        // 根据行号选中命令（点击内容区任意位置均可）
-        let inner_row = row.saturating_sub(main_top + 1);
-        let idx = inner_row as usize;
-        let len = app.current_category_commands().len();
-        debug_log!("  -> content click: inner_row={}, idx={}, len={}", inner_row, idx, len);
-        if len > 0 {
-            // 超出范围时选中最后一条
-            let clamped = idx.min(len - 1);
-            app.selected_command = Some(clamped);
-            app.content_cursor = clamped;
-        }
     }
 }
