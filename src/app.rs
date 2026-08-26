@@ -499,7 +499,11 @@ impl App {
     pub fn toggle_sidebar_item(&mut self) {
         let cursor = self.sidebar_cursor;
         if let Some(item) = self.sidebar_items.get(cursor) {
-            if item.kind == SidebarItemKind::Bookmarks || item.kind == SidebarItemKind::History {
+            // Bookmarks / History / Category → 直接进入内容区
+            if item.kind == SidebarItemKind::Bookmarks
+                || item.kind == SidebarItemKind::History
+                || item.kind == SidebarItemKind::Category
+            {
                 self.focus = Focus::Content;
                 return;
             }
@@ -542,6 +546,11 @@ impl App {
                     self.sidebar_cursor = self.sidebar_items.len().saturating_sub(1);
                 }
                 self.update_selection();
+
+                // 展开后自动进入内容区
+                if !was_expanded {
+                    self.focus = Focus::Content;
+                }
             }
         }
     }
