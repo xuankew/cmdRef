@@ -574,11 +574,6 @@ impl App {
                     self.sidebar_cursor = self.sidebar_items.len().saturating_sub(1);
                 }
                 self.update_selection();
-
-                // 展开后自动进入内容区
-                if !was_expanded {
-                    self.focus = Focus::Content;
-                }
             }
         }
     }
