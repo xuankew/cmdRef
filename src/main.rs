@@ -248,10 +248,9 @@ fn handle_mouse_click(app: &mut App, col: u16, row: u16, size: ratatui::prelude:
         let idx = inner_row as usize;
         let len = app.current_category_commands().len();
         if len > 0 && idx < len {
+            // 点击只选中，不自动复制（按 y 复制）
             app.selected_command = Some(idx);
             app.content_cursor = idx;
-            // 点击即复制
-            app.copy_current_command();
         }
     } else {
         // 点击详情区域，切换焦点到内容
