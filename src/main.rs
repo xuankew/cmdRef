@@ -127,10 +127,6 @@ fn run_app(
                         MouseEventKind::Down(crossterm::event::MouseButton::Left) => {
                             handle_mouse_click(app, mouse.column, mouse.row, area);
                         }
-                        MouseEventKind::Down(crossterm::event::MouseButton::Right) => {
-                            // 右键复制当前选中的命令
-                            app.copy_current_command();
-                        }
                         _ => {}
                     }
                 }
@@ -209,22 +205,27 @@ fn handle_mouse_click(app: &mut App, col: u16, row: u16, size: ratatui::prelude:
     let height = size.height;
     let width = size.width;
 
+    debug_log!("mouse click: col={}, row={}, size={}x{}", col, row, width, height);
+
     // Row 0: 标题栏, Row 1~height-2: 主内容区, Row height-1: 帮助栏
     let main_top: u16 = 1;
     let main_bottom: u16 = height.saturating_sub(1);
 
     if row < main_top || row >= main_bottom {
+        debug_log!("  -> outside main area");
         return;
     }
 
     // 用浮点运算匹配 Ratatui 的 Percentage 布局
     let sidebar_width = (width as f64 * 0.25) as u16;
+    debug_log!("  sidebar_width={}", sidebar_width);
 
     // 点击侧边栏
     if col < sidebar_width {
         app.focus = Focus::Sidebar;
         let inner_row = row.saturating_sub(main_top + 1);
         let cursor = inner_row as usize;
+        debug_log!("  -> sidebar click: inner_row={}, cursor={}", inner_row, cursor);
         if cursor < app.sidebar_items.len() {
             app.sidebar_cursor = cursor;
             app.selected_command = Some(0);
@@ -242,6 +243,9 @@ fn handle_mouse_click(app: &mut App, col: u16, row: u16, size: ratatui::prelude:
     let cmd_list_left = content_left + 1; // 跳过 content Block 左 border
     let cmd_list_right = cmd_list_left + cmd_list_width;
 
+    debug_log!("  content: left={}, inner_w={}, cmd_list: left={}, right={}, w={}",
+        content_left, content_inner_width, cmd_list_left, cmd_list_right, cmd_list_width);
+
     // 点击命令列表区域 → 选中命令
     if col >= cmd_list_left && col < cmd_list_right {
         app.focus = Focus::Content;
@@ -249,12 +253,14 @@ fn handle_mouse_click(app: &mut App, col: u16, row: u16, size: ratatui::prelude:
         let inner_row = row.saturating_sub(main_top + 1);
         let idx = inner_row as usize;
         let len = app.current_category_commands().len();
+        debug_log!("  -> cmd list click: inner_row={}, idx={}, len={}", inner_row, idx, len);
         if len > 0 && idx < len {
             app.selected_command = Some(idx);
             app.content_cursor = idx;
         }
     } else if col >= content_left {
         // 点击详情区域，切换焦点到内容
+        debug_log!("  -> detail area click");
         app.focus = Focus::Content;
     }
 }
