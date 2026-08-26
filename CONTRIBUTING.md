@@ -13,6 +13,7 @@ data/commands/
 ├── linux/      # Linux commands
 ├── mac/        # macOS-specific commands
 ├── windows/    # Windows commands (PowerShell, CMD, winget)
+├── dev/        # Dev Tools (Git, Docker, Database, Kubernetes, jq/yq)
 └── testing/    # Testing tools (ADB, iOS, network, performance)
 ```
 
@@ -25,11 +26,18 @@ Each command follows this format:
 ```yaml
 - name: command-name
   summary: "One-line description"
+  tags: ["场景1", "场景2"]
   examples:
     - description: "What this example does"
       code: "command-name -flag arg"
+      frequency: daily
+    - description: "Dangerous variant"
+      code: "command-name --force"
+      frequency: rarely
+      danger: high
     - description: "Another usage"
       code: "command-name --other-flag"
+      frequency: weekly
   tips:
     - "A helpful tip"
     - "Another tip"
@@ -39,7 +47,10 @@ Each command follows this format:
 **Guidelines:**
 - `name`: Use the exact command name as typed in the terminal
 - `summary`: Keep it concise (under 80 characters)
-- `examples`: Include 3-6 examples covering the most common use cases
+- `tags`: Add 2-5 scenario/use-case tags (e.g. `["回退", "调试", "部署"]`) for scenario-based search
+- `examples`: Include 3-8 examples covering the most common use cases
+- `examples[].frequency`: Mark each example as `daily` / `weekly` / `rarely`
+- `examples[].danger`: Mark dangerous commands as `high` or `medium` (shows ⚠ warning)
 - `tips`: Add gotchas, platform differences, or memory aids
 - `related`: List 2-4 commands that serve similar purposes
 
@@ -53,7 +64,7 @@ If your command doesn't fit any existing category:
 ```yaml
 category: "Category Name"
 description: "Description of this category"
-platform: linux  # or mac, windows, testing
+platform: dev  # or linux, mac, windows, testing
 commands:
   - name: your-command
     # ...
