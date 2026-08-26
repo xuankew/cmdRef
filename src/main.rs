@@ -237,30 +237,17 @@ fn handle_mouse_click(app: &mut App, col: u16, row: u16, size: ratatui::prelude:
 
     // 点击内容区域
     let content_left = sidebar_width;
-    // content Block 有 border (上1+下1, 左1+右1)，内部区域从 main_top+1, content_left+1 开始
-    let content_inner_width = ((width as f64 - sidebar_width as f64 - 2.0).max(0.0)) as u16;
-    let cmd_list_width = (content_inner_width as f64 * 0.30) as u16;
-    let cmd_list_left = content_left + 1; // 跳过 content Block 左 border
-    let cmd_list_right = cmd_list_left + cmd_list_width;
 
-    debug_log!("  content: left={}, inner_w={}, cmd_list: left={}, right={}, w={}",
-        content_left, content_inner_width, cmd_list_left, cmd_list_right, cmd_list_width);
-
-    // 点击命令列表区域 → 选中命令
-    if col >= cmd_list_left && col < cmd_list_right {
+    if col >= content_left {
         app.focus = Focus::Content;
-        // 命令列表项从 content inner 的第一行开始 = main_top + 1(border)
+        // 根据行号选中命令（点击内容区任意位置均可）
         let inner_row = row.saturating_sub(main_top + 1);
         let idx = inner_row as usize;
         let len = app.current_category_commands().len();
-        debug_log!("  -> cmd list click: inner_row={}, idx={}, len={}", inner_row, idx, len);
+        debug_log!("  -> content click: inner_row={}, idx={}, len={}", inner_row, idx, len);
         if len > 0 && idx < len {
             app.selected_command = Some(idx);
             app.content_cursor = idx;
         }
-    } else if col >= content_left {
-        // 点击详情区域，切换焦点到内容
-        debug_log!("  -> detail area click");
-        app.focus = Focus::Content;
     }
 }
