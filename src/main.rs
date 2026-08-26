@@ -245,9 +245,11 @@ fn handle_mouse_click(app: &mut App, col: u16, row: u16, size: ratatui::prelude:
         let idx = inner_row as usize;
         let len = app.current_category_commands().len();
         debug_log!("  -> content click: inner_row={}, idx={}, len={}", inner_row, idx, len);
-        if len > 0 && idx < len {
-            app.selected_command = Some(idx);
-            app.content_cursor = idx;
+        if len > 0 {
+            // 超出范围时选中最后一条
+            let clamped = idx.min(len - 1);
+            app.selected_command = Some(clamped);
+            app.content_cursor = clamped;
         }
     }
 }
