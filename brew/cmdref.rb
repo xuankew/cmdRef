@@ -1,26 +1,26 @@
 class Cmdref < Formula
-  desc "Interactive command reference tool for Linux, macOS, Windows and testing commands"
+  desc "Interactive command reference tool — 189 commands across 5 platforms"
   homepage "https://github.com/xuankew/cmdRef"
-  version "0.2.0"
+  version "0.3.0"
   license "MIT"
 
   on_macos do
     if Hardware::CPU.arm?
-      url "https://github.com/xuankew/cmdRef/releases/download/v0.2.0/cmdref-macos-aarch64"
-      sha256 "188d28d40a365c074ade1f8ed6848b0d41fda8372a312eb74a7b20e8eeb5ad81"
+      url "https://github.com/xuankew/cmdRef/releases/download/v0.3.0/cmdref-macos-aarch64"
+      sha256 "7879caca02117be8e5122164d9edc3fed22446613062a9b4b076c8fa99fcaa47"
     else
-      url "https://github.com/xuankew/cmdRef/releases/download/v0.2.0/cmdref-macos-x86_64"
-      sha256 "8f4bc5d826482cd0567abe049ec3eb996a8a72adfe2299bf252fd13ba9f06337"
+      url "https://github.com/xuankew/cmdRef/releases/download/v0.3.0/cmdref-macos-x86_64"
+      sha256 "42de0fbe568ecdf81c7ad86772eaa980a75febed61baab13830952aaf0384e4c"
     end
   end
 
   on_linux do
     if Hardware::CPU.arm?
-      url "https://github.com/xuankew/cmdRef/releases/download/v0.2.0/cmdref-linux-aarch64"
-      sha256 "5948446f48af66ace3ef756d33a3344459b6387d0565d21986dfea0189e234b5"
+      url "https://github.com/xuankew/cmdRef/releases/download/v0.3.0/cmdref-linux-aarch64"
+      sha256 "b5f15c74fc95603a4db1c9271068497c4b341288b6024f9a1689ef7c873aa54b"
     else
-      url "https://github.com/xuankew/cmdRef/releases/download/v0.2.0/cmdref-linux-x86_64"
-      sha256 "4d5daddeca7d76eea4be69c8a4cff976b7f0a63eeee4aaca1b4274bccc87158c"
+      url "https://github.com/xuankew/cmdRef/releases/download/v0.3.0/cmdref-linux-x86_64"
+      sha256 "40199bff110f4937683fa89bc41ed1b6da484eecc22cf8fc3eca48eabaf36566"
     end
   end
 
