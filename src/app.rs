@@ -192,7 +192,7 @@ impl App {
     }
 
     /// 更新当前选中项
-    fn update_selection(&mut self) {
+    pub fn update_selection(&mut self) {
         if let Some(item) = self.current_sidebar_item() {
             match item.kind {
                 SidebarItemKind::Bookmarks | SidebarItemKind::History => {
@@ -479,10 +479,10 @@ impl App {
 
     pub fn move_content_down(&mut self) {
         let len = if let Some(item) = self.current_sidebar_item() {
-            if item.kind == SidebarItemKind::Bookmarks {
-                self.bookmarks.count()
-            } else {
-                self.current_category_commands().len()
+            match item.kind {
+                SidebarItemKind::Bookmarks => self.bookmarks.count(),
+                SidebarItemKind::History => self.history.count(),
+                _ => self.current_category_commands().len(),
             }
         } else {
             0

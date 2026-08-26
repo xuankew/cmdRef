@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 
-const MAX_HISTORY: usize = 50;
+const MAX_HISTORY: usize = 10;
 
 /// History entry
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
