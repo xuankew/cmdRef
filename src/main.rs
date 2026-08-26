@@ -1,3 +1,5 @@
+#[macro_use]
+mod debug;
 mod app;
 mod bookmarks;
 mod clipboard;
@@ -22,7 +24,7 @@ use ratatui::backend::CrosstermBackend;
 use app::{App, AppMode, Focus};
 
 /// CmdRef - 交互式命令速查工具
-#[derive(Parser)]
+#[derive(Debug, Parser)]
 #[command(name = "cmdref", version, about = "Interactive command reference tool")]
 struct Cli {
     /// 直接搜索指定关键字
@@ -34,7 +36,7 @@ struct Cli {
     command: Option<Commands>,
 }
 
-#[derive(clap::Subcommand)]
+#[derive(Debug, clap::Subcommand)]
 enum Commands {
     /// 检查并更新到最新版本
     Update,
@@ -42,6 +44,10 @@ enum Commands {
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let cli = Cli::parse();
+
+    // 初始化调试日志（设置 CMDREF_DEBUG=1 启用）
+    debug::init();
+    debug_log!("CmdRef starting, args: {:?}", cli);
 
     // 处理子命令
     if let Some(Commands::Update) = cli.command {

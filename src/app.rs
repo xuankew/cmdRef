@@ -152,6 +152,8 @@ impl App {
         };
 
         app.update_selection();
+        debug_log!("App initialized: {} platforms, {} bookmarks, {} history",
+            app.platforms.len(), app.bookmarks.count(), app.history.count());
         app
     }
 
@@ -394,6 +396,7 @@ impl App {
     /// 复制当前命令的第一个示例代码到剪贴板
     pub fn copy_current_command(&mut self) {
         if let Some(cmd) = self.current_command() {
+            debug_log!("copy_current_command: {}", cmd.name);
             // 优先复制第一个 example code，否则复制命令名
             let text = cmd
                 .examples
@@ -415,6 +418,7 @@ impl App {
 
     /// 切换当前命令的书签状态
     pub fn toggle_bookmark(&mut self) {
+        debug_log!("toggle_bookmark called");
         if let (Some(platform), Some(cat), Some(cmd)) = (
             self.current_platform().map(|p| p.name.clone()),
             self.current_category().map(|c| c.name.clone()),
