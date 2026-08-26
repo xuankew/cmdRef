@@ -121,10 +121,17 @@ fn run_app(
                     }
                 }
                 Event::Mouse(mouse) => {
-                    if mouse.kind == MouseEventKind::Down(crossterm::event::MouseButton::Left) {
-                        let sz = terminal.size()?;
-                        let area = ratatui::prelude::Rect::new(0, 0, sz.width, sz.height);
-                        handle_mouse_click(app, mouse.column, mouse.row, area);
+                    let sz = terminal.size()?;
+                    let area = ratatui::prelude::Rect::new(0, 0, sz.width, sz.height);
+                    match mouse.kind {
+                        MouseEventKind::Down(crossterm::event::MouseButton::Left) => {
+                            handle_mouse_click(app, mouse.column, mouse.row, area);
+                        }
+                        MouseEventKind::Down(crossterm::event::MouseButton::Right) => {
+                            // 右键复制当前选中的命令
+                            app.copy_current_command();
+                        }
+                        _ => {}
                     }
                 }
                 _ => {}
@@ -193,7 +200,7 @@ fn handle_search_input(app: &mut App, key: KeyCode, _modifiers: KeyModifiers) {
     }
 }
 
-/// 处理鼠标点击事件
+/// 处理鼠标左键点击事件
 fn handle_mouse_click(app: &mut App, col: u16, row: u16, size: ratatui::prelude::Rect) {
     if app.mode == AppMode::Search {
         return;
@@ -202,25 +209,20 @@ fn handle_mouse_click(app: &mut App, col: u16, row: u16, size: ratatui::prelude:
     let height = size.height;
     let width = size.width;
 
-    // 布局计算（与 ui/layout.rs 一致）
-    // Row 0: 标题栏
-    // Row 1 ~ height-2: 主内容区 (sidebar 25% + content 75%)
-    // Row height-1: 帮助栏
+    // Row 0: 标题栏, Row 1~height-2: 主内容区, Row height-1: 帮助栏
     let main_top: u16 = 1;
     let main_bottom: u16 = height.saturating_sub(1);
 
-    // 不在主区域内则忽略
     if row < main_top || row >= main_bottom {
         return;
     }
 
-    // Ratatui Percentage(25) 的实际计算
-    let sidebar_width = width * 25 / 100;
+    // 用浮点运算匹配 Ratatui 的 Percentage 布局
+    let sidebar_width = (width as f64 * 0.25) as u16;
 
-    // 点击侧边栏 (sidebar Block 占满整个 sidebar_width)
+    // 点击侧边栏
     if col < sidebar_width {
         app.focus = Focus::Sidebar;
-        // sidebar Block 有 border: 上 border 1 行，内部从 main_top + 1 开始
         let inner_row = row.saturating_sub(main_top + 1);
         let cursor = inner_row as usize;
         if cursor < app.sidebar_items.len() {
@@ -232,27 +234,26 @@ fn handle_mouse_click(app: &mut App, col: u16, row: u16, size: ratatui::prelude:
         return;
     }
 
-    // 点击内容区域 (content Block 从 sidebar_width 开始)
+    // 点击内容区域
     let content_left = sidebar_width;
-    // content Block 有 border: 上 1 行 + 下 1 行，内部区域从 main_top + 1 开始
-    // 内部分为: 命令列表 (30%) + 详情 (70%)
-    let content_inner_width = width - content_left - 2; // 减去左右 border
-    let cmd_list_width = content_inner_width * 30 / 100;
-    let cmd_list_left = content_left + 1; // 跳过 content 左 border
+    // content Block 有 border (上1+下1, 左1+右1)，内部区域从 main_top+1, content_left+1 开始
+    let content_inner_width = ((width as f64 - sidebar_width as f64 - 2.0).max(0.0)) as u16;
+    let cmd_list_width = (content_inner_width as f64 * 0.30) as u16;
+    let cmd_list_left = content_left + 1; // 跳过 content Block 左 border
+    let cmd_list_right = cmd_list_left + cmd_list_width;
 
-    // 点击命令列表区域
-    if col >= cmd_list_left && col < cmd_list_left + cmd_list_width {
+    // 点击命令列表区域 → 选中命令
+    if col >= cmd_list_left && col < cmd_list_right {
         app.focus = Focus::Content;
-        // 命令列表项从 content inner 的第一行开始 = main_top + 1 + 1(border)
-        let inner_row = row.saturating_sub(main_top + 2);
+        // 命令列表项从 content inner 的第一行开始 = main_top + 1(border)
+        let inner_row = row.saturating_sub(main_top + 1);
         let idx = inner_row as usize;
         let len = app.current_category_commands().len();
         if len > 0 && idx < len {
-            // 点击只选中，不自动复制（按 y 复制）
             app.selected_command = Some(idx);
             app.content_cursor = idx;
         }
-    } else {
+    } else if col >= content_left {
         // 点击详情区域，切换焦点到内容
         app.focus = Focus::Content;
     }
