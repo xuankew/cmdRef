@@ -129,7 +129,7 @@ fn run_app(
     }
 }
 
-fn handle_normal_input(app: &mut App, key: KeyCode, _modifiers: KeyModifiers) {
+fn handle_normal_input(app: &mut App, key: KeyCode, modifiers: KeyModifiers) {
     match app.focus {
         Focus::Sidebar => {
             match key {
@@ -152,6 +152,14 @@ fn handle_normal_input(app: &mut App, key: KeyCode, _modifiers: KeyModifiers) {
             }
         }
         Focus::Content => {
+            // Ctrl+D / Ctrl+U 滚动右侧详情区
+            if modifiers.contains(KeyModifiers::CONTROL) {
+                match key {
+                    KeyCode::Char('d') => { app.scroll_detail_down(5); return; }
+                    KeyCode::Char('u') => { app.scroll_detail_up(5); return; }
+                    _ => {}
+                }
+            }
             match key {
                 KeyCode::Char('j') | KeyCode::Down => app.move_content_down(),
                 KeyCode::Char('k') | KeyCode::Up => app.move_content_up(),
@@ -159,10 +167,15 @@ fn handle_normal_input(app: &mut App, key: KeyCode, _modifiers: KeyModifiers) {
                 KeyCode::Char('/') => app.enter_search_mode(),
                 KeyCode::Char('b') => app.toggle_bookmark(),
                 KeyCode::Char('n') => app.open_add_command(),
+                KeyCode::Char('d') => app.delete_custom_command(),
                 KeyCode::Char('B') => app.jump_to_bookmarks(),
                 KeyCode::Char('H') => app.jump_to_history(),
                 KeyCode::Char('q') => app.should_quit = true,
                 KeyCode::Esc => { app.focus = Focus::Sidebar; }
+                KeyCode::Char(c @ '1'..='9') => {
+                    let idx = (c as usize) - ('0' as usize);
+                    app.copy_example_by_index(idx);
+                }
                 _ => {}
             }
         }

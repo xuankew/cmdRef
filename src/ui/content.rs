@@ -265,7 +265,8 @@ fn draw_command_detail(frame: &mut Frame, app: &App, area: Rect) {
             ),
         ]));
 
-        for example in &cmd.examples {
+        for (idx, example) in cmd.examples.iter().enumerate() {
+            let num = idx + 1;
             // 描述 + 频率标记
             let mut desc_spans = vec![
                 Span::styled(
@@ -273,20 +274,10 @@ fn draw_command_detail(frame: &mut Frame, app: &App, area: Rect) {
                     Style::default().fg(Color::Gray),
                 ),
             ];
-            // 频率标记
             match example.frequency.as_str() {
-                "daily" => desc_spans.push(Span::styled(
-                    " ⚡",
-                    Style::default().fg(Color::Green),
-                )),
-                "weekly" => desc_spans.push(Span::styled(
-                    " ○",
-                    Style::default().fg(Color::Blue),
-                )),
-                "rarely" => desc_spans.push(Span::styled(
-                    " ·",
-                    Style::default().fg(Color::DarkGray),
-                )),
+                "daily" => desc_spans.push(Span::styled(" ⚡", Style::default().fg(Color::Green))),
+                "weekly" => desc_spans.push(Span::styled(" ○", Style::default().fg(Color::Blue))),
+                "rarely" => desc_spans.push(Span::styled(" ·", Style::default().fg(Color::DarkGray))),
                 _ => {}
             }
             lines.push(Line::from(desc_spans));
@@ -301,16 +292,17 @@ fn draw_command_detail(frame: &mut Frame, app: &App, area: Rect) {
                 ]));
             } else if example.danger == "medium" {
                 lines.push(Line::from(vec![
-                    Span::styled(
-                        "      ⚠ use with caution",
-                        Style::default().fg(Color::Yellow),
-                    ),
+                    Span::styled("      ⚠ use with caution", Style::default().fg(Color::Yellow)),
                 ]));
             }
 
             lines.push(Line::from(vec![
                 Span::styled(
-                    format!("      $ {}", example.code),
+                    format!("    [{}]", num),
+                    Style::default().fg(Color::Yellow).add_modifier(Modifier::BOLD),
+                ),
+                Span::styled(
+                    format!(" $ {}", example.code),
                     Style::default().fg(Color::Green),
                 ),
             ]));
@@ -366,6 +358,7 @@ fn draw_command_detail(frame: &mut Frame, app: &App, area: Rect) {
     }
 
     let paragraph = Paragraph::new(lines)
-        .wrap(Wrap { trim: false });
+        .wrap(Wrap { trim: false })
+        .scroll((app.detail_scroll as u16, 0));
     frame.render_widget(paragraph, area);
 }

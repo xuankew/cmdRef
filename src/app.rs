@@ -107,6 +107,7 @@ pub struct App {
     // 内容区域状态
     pub content_cursor: usize,
     pub selected_command: Option<usize>,
+    pub detail_scroll: usize,
 
     // 焦点和模式
     pub focus: Focus,
@@ -137,47 +138,8 @@ pub struct SearchResultIndex {
 
 impl App {
     pub fn new(platforms: Vec<Platform>) -> Self {
-        let mut sidebar_items = Vec::new();
-
-        // 第一项：Bookmarks
-        sidebar_items.push(SidebarItem {
-            kind: SidebarItemKind::Bookmarks,
-            platform_index: 0,
-            category_index: None,
-            expanded: false,
-        });
-
-        // 第二项：History
-        sidebar_items.push(SidebarItem {
-            kind: SidebarItemKind::History,
-            platform_index: 0,
-            category_index: None,
-            expanded: false,
-        });
-
-        // 检测当前平台
         let detected_platform = Self::detect_platform_index(&platforms);
-
-        for (pi, platform) in platforms.iter().enumerate() {
-            let is_current = pi == detected_platform;
-            sidebar_items.push(SidebarItem {
-                kind: SidebarItemKind::Platform,
-                platform_index: pi,
-                category_index: None,
-                expanded: is_current,
-            });
-
-            if is_current {
-                for (ci, _) in platform.categories.iter().enumerate() {
-                    sidebar_items.push(SidebarItem {
-                        kind: SidebarItemKind::Category,
-                        platform_index: pi,
-                        category_index: Some(ci),
-                        expanded: false,
-                    });
-                }
-            }
-        }
+        let sidebar_items = Self::build_sidebar_items(&platforms, detected_platform);
 
         let search_engine = SearchEngine::new();
         let bookmarks = BookmarkManager::new();
@@ -198,6 +160,7 @@ impl App {
             sidebar_cursor: initial_cursor,
             content_cursor: 0,
             selected_command: Some(0),
+            detail_scroll: 0,
             focus: Focus::Sidebar,
             mode: AppMode::Normal,
             search_query: String::new(),
@@ -212,6 +175,41 @@ impl App {
         debug_log!("App initialized: {} platforms, {} bookmarks, {} history",
             app.platforms.len(), app.bookmarks.count(), app.history.count());
         app
+    }
+
+    /// 构建侧边栏项目列表（Bookmarks、History、各平台）
+    /// custom 平台始终展开；detected_platform 对应的 OS 平台也展开
+    fn build_sidebar_items(platforms: &[Platform], detected_platform: usize) -> Vec<SidebarItem> {
+        let mut items = Vec::new();
+
+        items.push(SidebarItem { kind: SidebarItemKind::Bookmarks, platform_index: 0, category_index: None, expanded: false });
+        items.push(SidebarItem { kind: SidebarItemKind::History,   platform_index: 0, category_index: None, expanded: false });
+
+        for (pi, platform) in platforms.iter().enumerate() {
+            let is_custom  = platform.name == "custom";
+            let is_current = pi == detected_platform;
+            let expanded   = is_custom || is_current;
+
+            items.push(SidebarItem {
+                kind: SidebarItemKind::Platform,
+                platform_index: pi,
+                category_index: None,
+                expanded,
+            });
+
+            if expanded {
+                for (ci, _) in platform.categories.iter().enumerate() {
+                    items.push(SidebarItem {
+                        kind: SidebarItemKind::Category,
+                        platform_index: pi,
+                        category_index: Some(ci),
+                        expanded: false,
+                    });
+                }
+            }
+        }
+
+        items
     }
 
     /// 检测当前操作系统对应的平台索引
@@ -478,26 +476,28 @@ impl App {
 
     // ======== 功能操作 ========
 
-    /// 复制当前命令的第一个示例代码到剪贴板
-    #[allow(dead_code)]
-    pub fn copy_current_command(&mut self) {
-        if let Some(cmd) = self.current_command() {
-            debug_log!("copy_current_command: {}", cmd.name);
-            // 优先复制第一个 example code，否则复制命令名
-            let text = cmd
-                .examples
-                .first()
-                .map(|e| e.code.clone())
-                .unwrap_or_else(|| cmd.name.clone());
+    /// 按 1-based 编号复制对应 example code 到剪贴板
+    pub fn copy_example_by_index(&mut self, index: usize) {
+        let text = if let Some(cmd) = self.current_command() {
+            cmd.examples.get(index.saturating_sub(1)).map(|e| e.code.clone())
+        } else {
+            None
+        };
 
-            match crate::clipboard::copy_to_clipboard(&text) {
-                Ok(()) => {
-                    let preview = if text.len() > 40 { &text[..40] } else { &text };
-                    self.set_status(format!("✓ Copied: {}", preview));
+        match text {
+            Some(code) => {
+                match crate::clipboard::copy_to_clipboard(&code) {
+                    Ok(()) => {
+                        let preview = if code.len() > 50 { format!("{}…", &code[..50]) } else { code.clone() };
+                        self.set_status(format!("✓ [{}] {}", index, preview));
+                    }
+                    Err(e) => {
+                        self.set_status(format!("✗ 复制失败: {}", e));
+                    }
                 }
-                Err(e) => {
-                    self.set_status(format!("✗ Copy failed: {}", e));
-                }
+            }
+            None => {
+                self.set_status(format!("✗ 没有第 {} 条命令", index));
             }
         }
     }
@@ -538,6 +538,77 @@ impl App {
         self.content_cursor = 0;
     }
 
+    /// 删除当前选中的自定义命令（仅限 custom 平台）
+    pub fn delete_custom_command(&mut self) {
+        // 确认当前在 custom 平台
+        let is_custom = self.current_platform().map(|p| p.name == "custom").unwrap_or(false);
+        if !is_custom {
+            return;
+        }
+
+        let cmd_name = match self.current_command() {
+            Some(c) => c.name.clone(),
+            None => return,
+        };
+
+        let file_path = dirs::config_dir()
+            .unwrap_or_else(|| std::path::PathBuf::from("."))
+            .join("cmdref").join("custom").join("my_commands.yaml");
+
+        let content = match std::fs::read_to_string(&file_path) {
+            Ok(c) => c,
+            Err(_) => return,
+        };
+
+        // 重新解析，删除目标命令，重新序列化写回
+        let mut cmd_file: crate::data::CommandFile = match serde_yaml::from_str(&content) {
+            Ok(f) => f,
+            Err(_) => return,
+        };
+
+        let before = cmd_file.commands.len();
+        cmd_file.commands.retain(|c| c.name != cmd_name);
+        if cmd_file.commands.len() == before {
+            return;
+        }
+
+        // 全部删完就直接删文件
+        if cmd_file.commands.is_empty() {
+            let _ = std::fs::remove_file(&file_path);
+        } else {
+            // 序列化回文件
+            let new_content = match serde_yaml::to_string(&cmd_file) {
+                Ok(s) => s,
+                Err(_) => return,
+            };
+            if std::fs::write(&file_path, new_content).is_err() {
+                self.set_status("✗ 删除失败：写文件错误".to_string());
+                return;
+            }
+        }
+
+        // 热重载
+        self.platforms = crate::data::load_all_data();
+        let detected = Self::detect_platform_index(&self.platforms);
+        self.sidebar_items = Self::build_sidebar_items(&self.platforms, detected);
+
+        // 定位光标：留在 custom 平台，索引往前挪一步
+        let new_idx = self.selected_command.unwrap_or(0).saturating_sub(1);
+        let custom_pi = self.platforms.iter().position(|p| p.name == "custom");
+        if let Some(pi) = custom_pi {
+            if let Some(si) = self.sidebar_items.iter().position(|i| {
+                i.kind == SidebarItemKind::Category && i.platform_index == pi
+            }) {
+                self.sidebar_cursor = si;
+                self.selected_command = Some(new_idx);
+                self.content_cursor = new_idx;
+                self.focus = Focus::Content;
+            }
+        }
+
+        self.set_status(format!("✓ 已删除: {}", cmd_name));
+    }
+
     // ======== 导航操作 ========
 
     pub fn move_sidebar_up(&mut self) {
@@ -559,6 +630,7 @@ impl App {
             if idx > 0 {
                 self.selected_command = Some(idx - 1);
                 self.content_cursor = idx - 1;
+                self.detail_scroll = 0;
             }
         }
     }
@@ -578,8 +650,17 @@ impl App {
             if idx < len.saturating_sub(1) {
                 self.selected_command = Some(idx + 1);
                 self.content_cursor = idx + 1;
+                self.detail_scroll = 0;
             }
         }
+    }
+
+    pub fn scroll_detail_down(&mut self, step: usize) {
+        self.detail_scroll = self.detail_scroll.saturating_add(step);
+    }
+
+    pub fn scroll_detail_up(&mut self, step: usize) {
+        self.detail_scroll = self.detail_scroll.saturating_sub(step);
     }
 
     pub fn toggle_sidebar_item(&mut self) {
@@ -758,7 +839,7 @@ impl App {
         let needs_header = !file_path.exists();
         let mut content = String::new();
         if needs_header {
-            content.push_str("category: \"我的命令\"\ndescription: \"自定义的常用命令\"\nplatform: dev\ncommands:\n");
+            content.push_str("category: \"我的命令\"\ndescription: \"自定义的常用命令\"\nplatform: custom\ncommands:\n");
         }
         content.push_str(&entry);
 
@@ -780,31 +861,16 @@ impl App {
             return;
         }
 
-        // 重新加载数据
+        // 重新加载数据并重建侧边栏
         self.platforms = crate::data::load_all_data();
-
-        // 重建侧边栏
         let detected = Self::detect_platform_index(&self.platforms);
-        let mut sidebar_items = Vec::new();
-        sidebar_items.push(SidebarItem { kind: SidebarItemKind::Bookmarks, platform_index: 0, category_index: None, expanded: false });
-        sidebar_items.push(SidebarItem { kind: SidebarItemKind::History, platform_index: 0, category_index: None, expanded: false });
-        for (pi, platform) in self.platforms.iter().enumerate() {
-            let is_current = pi == detected;
-            sidebar_items.push(SidebarItem { kind: SidebarItemKind::Platform, platform_index: pi, category_index: None, expanded: is_current });
-            if is_current {
-                for (ci, _) in platform.categories.iter().enumerate() {
-                    sidebar_items.push(SidebarItem { kind: SidebarItemKind::Category, platform_index: pi, category_index: Some(ci), expanded: false });
-                }
-            }
-        }
-        self.sidebar_items = sidebar_items;
+        self.sidebar_items = Self::build_sidebar_items(&self.platforms, detected);
 
-        // 跳转到 dev 平台 / 我的命令 分类
+        // 跳转到 我的命令 平台
         let cmd_name = name.clone();
 
-        // 先收集目标索引，避免同时借用 self.platforms 和 self.sidebar_items
         let target = self.platforms.iter().enumerate().find_map(|(pi, platform)| {
-            if platform.name != "dev" { return None; }
+            if platform.name != "custom" { return None; }
             platform.categories.iter().enumerate().find_map(|(ci, cat)| {
                 if cat.name != "我的命令" { return None; }
                 cat.commands.iter().position(|c| c.name == cmd_name)

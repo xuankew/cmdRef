@@ -1,37 +1,36 @@
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 
 /// 单条命令示例
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct Example {
     pub description: String,
     pub code: String,
     /// 使用频率: daily / weekly / rarely
-    #[serde(default)]
+    #[serde(default, skip_serializing_if = "String::is_empty")]
     pub frequency: String,
     /// 危险等级: high / medium / none
-    #[serde(default)]
+    #[serde(default, skip_serializing_if = "String::is_empty")]
     pub danger: String,
 }
 
 /// 命令定义
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct Command {
     pub name: String,
     pub summary: String,
-    #[serde(default)]
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub examples: Vec<Example>,
-    #[serde(default)]
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub tips: Vec<String>,
-    #[serde(default)]
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub related: Vec<String>,
-    /// 场景标签，用于按场景检索
-    #[serde(default)]
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub tags: Vec<String>,
 }
 
 /// 单个 YAML 文件的数据结构
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct CommandFile {
     pub category: String,
     pub description: String,
@@ -142,6 +141,12 @@ pub fn load_all_data() -> Vec<Platform> {
     // 加载用户自定义命令
     merge_custom_commands(&mut platforms);
 
+    // custom 平台置顶（显示在 History 正下方）
+    if let Some(pos) = platforms.iter().position(|p| p.name == "custom") {
+        let custom = platforms.remove(pos);
+        platforms.insert(0, custom);
+    }
+
     platforms
 }
 
@@ -162,6 +167,7 @@ fn merge_custom_commands(platforms: &mut Vec<Platform>) {
         ("windows", "Windows"),
         ("testing", "Testing"),
         ("dev", "Dev Tools"),
+        ("custom", "自定义"),
     ];
 
     let entries = match std::fs::read_dir(&custom_dir) {
