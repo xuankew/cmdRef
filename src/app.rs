@@ -11,11 +11,68 @@ pub enum Focus {
     Search,
 }
 
-/// 应用模式
+/// 自定义命令编辑器中的字段
 #[derive(Debug, Clone, Copy, PartialEq)]
+pub enum EditorField {
+    Name,
+    Command,
+    Tags,
+}
+
+impl EditorField {
+    pub fn next(self) -> Self {
+        match self {
+            EditorField::Name => EditorField::Command,
+            EditorField::Command => EditorField::Tags,
+            EditorField::Tags => EditorField::Name,
+        }
+    }
+
+    pub fn prev(self) -> Self {
+        match self {
+            EditorField::Name => EditorField::Tags,
+            EditorField::Command => EditorField::Name,
+            EditorField::Tags => EditorField::Command,
+        }
+    }
+}
+
+/// 自定义命令编辑器状态
+#[derive(Debug, Clone, PartialEq)]
+pub struct EditorState {
+    pub active_field: EditorField,
+    pub name: String,
+    pub command: String,
+    pub tags: String,
+    pub error: String,
+}
+
+impl EditorState {
+    pub fn new() -> Self {
+        EditorState {
+            active_field: EditorField::Name,
+            name: String::new(),
+            command: String::new(),
+            tags: String::new(),
+            error: String::new(),
+        }
+    }
+
+    pub fn active_field_mut(&mut self) -> &mut String {
+        match self.active_field {
+            EditorField::Name => &mut self.name,
+            EditorField::Command => &mut self.command,
+            EditorField::Tags => &mut self.tags,
+        }
+    }
+}
+
+/// 应用模式
+#[derive(Debug, Clone, PartialEq)]
 pub enum AppMode {
     Normal,
     Search,
+    AddCommand(EditorState),
 }
 
 /// 侧边栏中的项目类型
@@ -267,7 +324,7 @@ impl App {
 
     /// 获取当前应该显示的命令
     pub fn current_command(&self) -> Option<&Command> {
-        if self.mode == AppMode::Search {
+        if matches!(self.mode, AppMode::Search) {
             if let Some(result) = self.search_results.get(self.search_cursor) {
                 return self.platforms
                     .get(result.platform_index)
@@ -601,6 +658,183 @@ impl App {
         self.search_query.clear();
         self.search_results.clear();
     }
+
+    /// 打开自定义命令添加表单
+    pub fn open_add_command(&mut self) {
+        self.mode = AppMode::AddCommand(EditorState::new());
+    }
+
+    /// 向当前编辑字段输入字符
+    pub fn editor_input(&mut self, c: char) {
+        if let AppMode::AddCommand(ref mut state) = self.mode {
+            state.active_field_mut().push(c);
+        }
+    }
+
+    /// 删除当前编辑字段末尾字符
+    pub fn editor_backspace(&mut self) {
+        if let AppMode::AddCommand(ref mut state) = self.mode {
+            state.active_field_mut().pop();
+        }
+    }
+
+    /// 切换到下一个字段
+    pub fn editor_next_field(&mut self) {
+        if let AppMode::AddCommand(ref mut state) = self.mode {
+            state.active_field = state.active_field.next();
+        }
+    }
+
+    /// 切换到上一个字段
+    pub fn editor_prev_field(&mut self) {
+        if let AppMode::AddCommand(ref mut state) = self.mode {
+            state.active_field = state.active_field.prev();
+        }
+    }
+
+    /// 取消添加命令
+    pub fn editor_cancel(&mut self) {
+        self.mode = AppMode::Normal;
+    }
+
+    /// 保存自定义命令并热重载
+    pub fn editor_save(&mut self) {
+        let state = if let AppMode::AddCommand(ref mut s) = self.mode {
+            s.clone()
+        } else {
+            return;
+        };
+
+        let name = state.name.trim().to_string();
+        let command = state.command.trim().to_string();
+
+        if name.is_empty() {
+            if let AppMode::AddCommand(ref mut s) = self.mode {
+                s.error = "命令名称不能为空".to_string();
+            }
+            return;
+        }
+        if command.is_empty() {
+            if let AppMode::AddCommand(ref mut s) = self.mode {
+                s.error = "命令内容不能为空".to_string();
+            }
+            return;
+        }
+
+        // 构建 YAML 内容：name 作标题，command 同时作 summary 和 example code
+        let tags_line = if !state.tags.trim().is_empty() {
+            let tags: Vec<String> = state.tags.split(',')
+                .map(|t| format!("      - \"{}\"", t.trim()))
+                .collect();
+            format!("    tags:\n{}", tags.join("\n"))
+        } else {
+            String::new()
+        };
+
+        let entry = format!(
+            "  - name: \"{}\"\n    summary: \"{}\"\n    examples:\n      - description: \"运行\"\n        code: \"{}\"\n{}\n",
+            name.replace('"', "\\\""),
+            command.replace('"', "\\\""),
+            command.replace('"', "\\\""),
+            tags_line,
+        );
+
+        // 确定保存路径
+        let custom_dir = dirs::config_dir()
+            .unwrap_or_else(|| std::path::PathBuf::from("."))
+            .join("cmdref")
+            .join("custom");
+
+        if let Err(e) = std::fs::create_dir_all(&custom_dir) {
+            if let AppMode::AddCommand(ref mut s) = self.mode {
+                s.error = format!("无法创建目录: {}", e);
+            }
+            return;
+        }
+
+        let file_path = custom_dir.join("my_commands.yaml");
+
+        // 如果文件不存在，写入文件头
+        let needs_header = !file_path.exists();
+        let mut content = String::new();
+        if needs_header {
+            content.push_str("category: \"我的命令\"\ndescription: \"自定义的常用命令\"\nplatform: dev\ncommands:\n");
+        }
+        content.push_str(&entry);
+
+        let write_result = if needs_header {
+            std::fs::write(&file_path, &content)
+        } else {
+            use std::io::Write;
+            let mut f = std::fs::OpenOptions::new().append(true).open(&file_path);
+            match f {
+                Ok(ref mut file) => file.write_all(entry.as_bytes()),
+                Err(e) => Err(e),
+            }
+        };
+
+        if let Err(e) = write_result {
+            if let AppMode::AddCommand(ref mut s) = self.mode {
+                s.error = format!("保存失败: {}", e);
+            }
+            return;
+        }
+
+        // 重新加载数据
+        self.platforms = crate::data::load_all_data();
+
+        // 重建侧边栏
+        let detected = Self::detect_platform_index(&self.platforms);
+        let mut sidebar_items = Vec::new();
+        sidebar_items.push(SidebarItem { kind: SidebarItemKind::Bookmarks, platform_index: 0, category_index: None, expanded: false });
+        sidebar_items.push(SidebarItem { kind: SidebarItemKind::History, platform_index: 0, category_index: None, expanded: false });
+        for (pi, platform) in self.platforms.iter().enumerate() {
+            let is_current = pi == detected;
+            sidebar_items.push(SidebarItem { kind: SidebarItemKind::Platform, platform_index: pi, category_index: None, expanded: is_current });
+            if is_current {
+                for (ci, _) in platform.categories.iter().enumerate() {
+                    sidebar_items.push(SidebarItem { kind: SidebarItemKind::Category, platform_index: pi, category_index: Some(ci), expanded: false });
+                }
+            }
+        }
+        self.sidebar_items = sidebar_items;
+
+        // 跳转到 dev 平台 / 我的命令 分类
+        let cmd_name = name.clone();
+
+        // 先收集目标索引，避免同时借用 self.platforms 和 self.sidebar_items
+        let target = self.platforms.iter().enumerate().find_map(|(pi, platform)| {
+            if platform.name != "dev" { return None; }
+            platform.categories.iter().enumerate().find_map(|(ci, cat)| {
+                if cat.name != "我的命令" { return None; }
+                cat.commands.iter().position(|c| c.name == cmd_name)
+                    .map(|cmd_idx| (pi, ci, cmd_idx))
+            })
+        });
+
+        if let Some((pi, ci, cmd_idx)) = target {
+            self.sidebar_cursor = self.sidebar_items.iter()
+                .position(|i| i.kind == SidebarItemKind::Platform && i.platform_index == pi)
+                .unwrap_or(0);
+            self.toggle_sidebar_item();
+
+            if let Some(si) = self.sidebar_items.iter().position(|item| {
+                item.kind == SidebarItemKind::Category
+                    && item.platform_index == pi
+                    && item.category_index == Some(ci)
+            }) {
+                self.sidebar_cursor = si;
+                self.selected_command = Some(cmd_idx);
+                self.content_cursor = cmd_idx;
+                self.focus = Focus::Content;
+            }
+        }
+
+
+        self.mode = AppMode::Normal;
+        self.set_status(format!("✓ 已保存: {}", cmd_name));
+    }
+
 
     pub fn search_input(&mut self, c: char) {
         self.search_query.push(c);

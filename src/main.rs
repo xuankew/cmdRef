@@ -110,8 +110,9 @@ fn run_app(
                         return Ok(());
                     }
 
-                    match app.mode {
+                    match &app.mode {
                         AppMode::Search => handle_search_input(app, key.code, key.modifiers),
+                        AppMode::AddCommand(_) => handle_editor_input(app, key.code, key.modifiers),
                         AppMode::Normal => handle_normal_input(app, key.code, key.modifiers),
                     }
 
@@ -137,6 +138,7 @@ fn handle_normal_input(app: &mut App, key: KeyCode, _modifiers: KeyModifiers) {
                 KeyCode::Enter | KeyCode::Right => app.toggle_sidebar_item(),
                 KeyCode::Tab => app.switch_focus(),
                 KeyCode::Char('/') => app.enter_search_mode(),
+                KeyCode::Char('n') => app.open_add_command(),
                 KeyCode::Char('q') => app.should_quit = true,
                 KeyCode::Char('B') => app.jump_to_bookmarks(),
                 KeyCode::Char('H') => app.jump_to_history(),
@@ -156,6 +158,7 @@ fn handle_normal_input(app: &mut App, key: KeyCode, _modifiers: KeyModifiers) {
                 KeyCode::Left | KeyCode::Tab => app.switch_focus(),
                 KeyCode::Char('/') => app.enter_search_mode(),
                 KeyCode::Char('b') => app.toggle_bookmark(),
+                KeyCode::Char('n') => app.open_add_command(),
                 KeyCode::Char('B') => app.jump_to_bookmarks(),
                 KeyCode::Char('H') => app.jump_to_history(),
                 KeyCode::Char('q') => app.should_quit = true,
@@ -181,6 +184,24 @@ fn handle_search_input(app: &mut App, key: KeyCode, _modifiers: KeyModifiers) {
         KeyCode::Down => app.move_search_down(),
         KeyCode::Backspace => app.search_backspace(),
         KeyCode::Char(c) => app.search_input(c),
+        _ => {}
+    }
+}
+
+fn handle_editor_input(app: &mut App, key: KeyCode, modifiers: KeyModifiers) {
+    match key {
+        KeyCode::Esc => app.editor_cancel(),
+        KeyCode::Enter => app.editor_save(),
+        KeyCode::Tab => {
+            if modifiers.contains(KeyModifiers::SHIFT) {
+                app.editor_prev_field();
+            } else {
+                app.editor_next_field();
+            }
+        }
+        KeyCode::BackTab => app.editor_prev_field(),
+        KeyCode::Backspace => app.editor_backspace(),
+        KeyCode::Char(c) => app.editor_input(c),
         _ => {}
     }
 }

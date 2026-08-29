@@ -1,14 +1,18 @@
 use ratatui::prelude::*;
 use ratatui::widgets::*;
 use crate::app::{App, AppMode};
-use super::{sidebar, content, search, help};
+use super::{sidebar, content, search, help, editor};
 
 /// 渲染整个 UI
 pub fn draw(frame: &mut Frame, app: &App) {
-    if app.mode == AppMode::Search {
-        draw_search_layout(frame, app);
-    } else {
-        draw_main_layout(frame, app);
+    match &app.mode {
+        AppMode::Search => draw_search_layout(frame, app),
+        AppMode::AddCommand(_) => {
+            // 先渲染主界面作为背景，再叠加编辑器
+            draw_main_layout(frame, app);
+            editor::draw(frame, app);
+        }
+        AppMode::Normal => draw_main_layout(frame, app),
     }
 }
 
