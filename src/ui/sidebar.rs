@@ -59,6 +59,26 @@ pub fn draw(frame: &mut Frame, app: &App, area: Rect) {
                         ),
                     ]))
                 }
+                SidebarItemKind::Prompts => {
+                    let prompt_count = app.prompts.count();
+                    let text = format!("🤖 Prompts ({})", prompt_count);
+                    ListItem::new(Line::from(vec![
+                        Span::styled(
+                            text,
+                            if is_selected { style } else { Style::default().fg(Color::Magenta) },
+                        ),
+                    ]))
+                }
+                SidebarItemKind::Passwords => {
+                    let password_count = app.passwords.count();
+                    let text = format!("🔑 Passwords ({})", password_count);
+                    ListItem::new(Line::from(vec![
+                        Span::styled(
+                            text,
+                            if is_selected { style } else { Style::default().fg(Color::Green) },
+                        ),
+                    ]))
+                }
                 SidebarItemKind::Platform => {
                     if let Some(platform) = app.platforms.get(item.platform_index) {
                         let icon = if item.expanded { "▼" } else { "▶" };

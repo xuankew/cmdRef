@@ -17,6 +17,9 @@ CmdRef is a terminal-based cheatsheet that helps developers, testers, and ops en
 - **History** — press `H` to quickly revisit recently viewed commands
 - **Auto-detect platform** — automatically highlights your OS on startup
 - **Custom commands** — add your own YAML files to `~/.config/cmdref/custom/` without rebuilding
+- **Prompts** — record and quickly reuse AI prompts with name, description, and multi-line content
+- **Cloud sync** — `cmdref sync push/pull` syncs bookmarks, custom commands, and prompts across devices via GitHub (private repo) or WebDAV (坚果云, Nextcloud) with automatic 3-way merge
+- **Cross-device sync** — set `CMDREF_DATA_DIR` to a cloud-synced folder (iCloud, Dropbox, OneDrive, etc.)
 - **Self-update** — `cmdref update` checks for new versions and upgrades in-place
 - **Cross-platform** — single binary for macOS, Linux, and Windows
 - **Zero dependencies** — all command data is embedded in the binary
@@ -69,6 +72,13 @@ irm https://raw.githubusercontent.com/xuankew/cmdRef/main/install.ps1 | iex     
 cmdref                # Launch interactive TUI
 cmdref --search tail  # Launch with search pre-filled
 cmdref update         # Check and install updates
+cmdref path           # Show the resolved data directory
+cmdref sync login --backend github --token <PAT>  # Configure GitHub sync (private repo)
+cmdref sync login <url> <user> <password>          # Configure WebDAV sync (e.g. Jianguoyun)
+cmdref sync push      # Upload local data to the cloud
+cmdref sync pull      # Download and merge cloud data
+cmdref sync status    # Show local/remote sync status
+cmdref sync logout    # Remove saved credentials
 cmdref --help         # Show help
 cmdref --version      # Show version
 ```
@@ -84,8 +94,10 @@ cmdref --version      # Show version
 | `Enter` / `→` | Expand/collapse platform, or enter category |
 | `Tab` | Switch to content area |
 | `/` | Enter search mode |
+| `n` | Add a new command or prompt |
 | `B` | Jump to bookmarks |
 | `H` | Jump to history |
+| `P` | Jump to prompts |
 | `1` - `5` | Jump to platform (Linux / macOS / Windows / Dev Tools / Testing) |
 | `q` | Quit |
 
@@ -93,10 +105,15 @@ cmdref --version      # Show version
 
 | Key | Action |
 |-----|--------|
-| `j` / `↓` | Move down in command list |
-| `k` / `↑` | Move up in command list |
+| `j` / `↓` | Move down in command/prompt list |
+| `k` / `↑` | Move up in command/prompt list |
 | `←` / `Tab` | Back to sidebar |
+| `1` - `9` | Copy the corresponding example |
 | `b` | Toggle bookmark on current command |
+| `y` | Copy the full prompt content (when viewing prompts) |
+| `n` | Add a new command or prompt |
+| `e` | Edit the current prompt |
+| `d` | Delete the current custom command or prompt |
 | `B` | Jump to bookmarks |
 | `H` | Jump to history |
 | `/` | Enter search mode |
@@ -142,10 +159,19 @@ command-tool/
 │   ├── clipboard.rs            # Cross-platform clipboard
 │   ├── history.rs              # View history tracking
 │   ├── debug.rs                # Debug logging (CMDREF_DEBUG=1)
+│   ├── paths.rs                # Data/config path resolution
+│   ├── prompts.rs              # Prompt data model and persistence
+│   ├── sync/                   # Cloud sync (GitHub + WebDAV)
+│   │   ├── mod.rs              # sync subcommands (login/push/pull/status/logout)
+│   │   ├── config.rs           # Credentials, URL normalization, device id
+│   │   ├── dav.rs              # WebDAV client (curl shell-out, no new deps)
+│   │   ├── github.rs           # GitHub client (Contents API, PAT auth, curl shell-out)
+│   │   ├── snapshot.rs         # Snapshot build/apply, merge baseline, backups
+│   │   └── merge.rs            # 3-way merge with conflict report
 │   ├── update.rs               # Self-update via GitHub API
 │   └── ui/                     # TUI rendering
 │       ├── layout.rs           # Main layout (title + main + help)
-│       ├── sidebar.rs          # Sidebar (platforms, categories, bookmarks, history)
+│       ├── sidebar.rs          # Sidebar (platforms, categories, bookmarks, history, prompts)
 │       ├── content.rs          # Content panel (command list + detail view)
 │       ├── help.rs             # Bottom help bar (context-sensitive)
 │       └── search.rs           # Search input + results
@@ -200,6 +226,154 @@ Custom commands are merged into the built-in data at startup. Files with `platfo
 | `examples[].danger` | No | `high` / `medium` / `none` |
 | `tips` | No | Helpful notes about the command |
 | `related` | No | Related commands |
+
+## Prompts
+
+CmdRef now includes a dedicated **Prompts** manager for AI prompts. Each prompt has a name, description, and multi-line content, and is stored independently from commands so long text renders correctly.
+
+**Keyboard shortcuts (Prompts):**
+
+| Key | Action |
+|-----|--------|
+| `P` | Jump to prompts from sidebar |
+| `n` | Create a new prompt |
+| `e` | Edit the selected prompt |
+| `d` | Delete the selected prompt |
+| `y` / `Enter` / `1` | Copy the full prompt content to clipboard |
+
+Prompts are saved to `<data_dir>/prompts/my_prompts.yaml` by default. You can also create additional `*.yaml` or `*.yml` files in that directory and CmdRef will load them on startup.
+
+```yaml
+# ~/.config/cmdref/prompts/my_prompts.yaml
+title: "My Prompts"
+prompts:
+  - name: code-review
+    description: "Review a code diff"
+    content: |
+      Please review the following code diff. Focus on:
+      1. Correctness
+      2. Performance
+      3. Readability
+      4. Security
+    tags: ["coding", "review"]
+```
+
+## Cross-Device Sync
+
+Sync bookmarks, custom commands, and prompts across devices in one of three ways. Only one backend is active at a time — running `sync login` switches the backend.
+
+### Option 1: GitHub Sync
+
+Uses a private GitHub repository to store sync data. You create the repository yourself, then grant CmdRef access via a Personal Access Token scoped to that single repo.
+
+#### Setup
+
+```bash
+# Step 1: Create a new private repository on GitHub (e.g. "cmdref-sync")
+#         → https://github.com/new → name it, set Private, click Create
+#         (no need to add README or .gitignore)
+
+# Step 2: Generate a fine-grained Personal Access Token
+#         → https://github.com/settings/tokens?type=beta
+#         → "Generate new token"
+#         → Name: "cmdref-sync" (or any name you like)
+#         → Repository access: "Only select repositories" → pick your sync repo
+#         → Permissions → Repository permissions → Contents: Read and write
+#         → Click "Generate token" and copy it
+
+# Step 3: Login (--repo accepts multiple formats)
+cmdref sync login --backend github --token github_pat_xxxx --repo yourname/cmdref-sync
+# Or using SSH URL:
+cmdref sync login --backend github --token github_pat_xxxx --repo git@github.com:yourname/cmdref-sync.git
+# Or using HTTPS URL:
+cmdref sync login --backend github --token github_pat_xxxx --repo https://github.com/yourname/cmdref-sync
+```
+
+#### Daily Usage
+
+```bash
+cmdref sync push               # Upload local data to GitHub
+cmdref sync pull               # Download and merge cloud data into local
+cmdref sync status             # Show local/remote versions and pending changes
+cmdref sync logout             # Remove saved credentials (data untouched)
+```
+
+Data is stored as `cmdref-sync.json` in the root of the repository you specified.
+
+#### On a New Device
+
+```bash
+# Install cmdref, then pull existing data first
+cmdref sync login --backend github --token <same-PAT> --repo <same-repo>
+cmdref sync pull               # Downloads cloud data to local
+```
+
+### Option 2: WebDAV Sync
+
+Works with Jianguoyun (坚果云), Nextcloud, or any standard WebDAV server.
+
+#### Setup
+
+```bash
+# Jianguoyun (坚果云): use an app password, NOT your account password
+#   → Account Info → Security Options → App Passwords → create one
+cmdref sync login https://dav.jianguoyun.com/dav/cmdref/ you@example.com <app-password>
+
+# Nextcloud example
+cmdref sync login https://cloud.example.com/remote.php/dav/files/username/cmdref/ username password
+```
+
+#### Daily Usage
+
+```bash
+cmdref sync push               # Upload local data to the WebDAV server
+cmdref sync pull               # Download and merge cloud data into local
+cmdref sync status             # Show local/remote versions and pending changes
+cmdref sync logout             # Remove saved credentials (data untouched)
+```
+
+The sync file (`cmdref-sync.json`) is stored under the WebDAV directory you configured. The directory is created automatically on first push.
+
+### Merging & Backups
+
+Both backends share the same merge behavior:
+
+- **`pull` performs a 3-way merge** (local / cloud / last-synced baseline). Non-conflicting changes from different devices are combined automatically — a bookmark added on your laptop and a prompt added on your desktop both survive.
+- **Conflict resolution**: if the same item was changed differently on both devices, the cloud version wins by default. Pass `--prefer-local` to keep the local version instead.
+- **Automatic backups**: before writing, `pull` backs up your current data to `sync-backup/` in the config directory (last 10 backups kept).
+- **First device**: run `push` to upload. On subsequent devices, run `pull` first — `push` will refuse if the cloud has newer data you haven't pulled yet. Use `--force` to override.
+
+### Security Notes
+
+- Credentials are stored in plain text in `sync.json` under the config directory (permission `600`), similar to `~/.netrc`
+- For WebDAV, prefer an application password over your main account password
+- For GitHub, use a fine-grained PAT scoped to only the sync repository — avoid classic tokens with full `repo` scope
+- Requires the system `curl` executable (same as `cmdref update`)
+
+### Option 3: Cloud Folder (`CMDREF_DATA_DIR`)
+
+Point `CMDREF_DATA_DIR` at a folder synced by iCloud, Dropbox, OneDrive, or any other cloud provider:
+
+```bash
+# macOS with iCloud Drive
+export CMDREF_DATA_DIR="$HOME/Library/Mobile Documents/com~apple~CloudDocs/cmdref"
+
+# Or anywhere else
+cmdref path                      # Verify the resolved path
+CMDREF_DATA_DIR=/tmp/cmdref-test cmdref
+```
+
+When `CMDREF_DATA_DIR` is set, CmdRef reads and writes:
+
+- `<CMDREF_DATA_DIR>/custom/` — custom commands
+- `<CMDREF_DATA_DIR>/prompts/` — prompts
+- `<CMDREF_DATA_DIR>/bookmarks.json` — bookmarks
+
+Local-only state remains in the default config directory:
+
+- `~/.config/cmdref/history.json`
+- `~/.config/cmdref/debug.log`
+- Sync state: `sync.json` (credentials), `sync-base.json` (merge baseline), `sync-backup/` (pre-sync backups)
 
 ## Contributing
 
@@ -267,7 +441,11 @@ cat ~/.config/cmdref/debug.log                         # Linux
 
 ## Roadmap
 
-- [ ] Copy-to-clipboard with keyboard shortcut (pending stable cross-terminal solution)
+- [x] Copy-to-clipboard with keyboard shortcut
+- [x] Custom commands
+- [x] Prompts manager
+- [x] WebDAV cloud sync (坚果云 / Nextcloud)
+- [x] GitHub cloud sync (private repo, PAT auth)
 - [ ] More macOS commands (defaults, launchctl, plutil)
 - [ ] CI/CD commands (GitHub Actions, GitLab CI)
 - [ ] Build tools (make, cmake, gradle, npm, cargo)

@@ -3,9 +3,14 @@ mod debug;
 mod app;
 mod bookmarks;
 mod clipboard;
+mod crypto;
 mod data;
 mod history;
+mod paths;
+mod passwords;
+mod prompts;
 mod search;
+mod sync;
 mod ui;
 mod update;
 
@@ -21,7 +26,7 @@ use crossterm::{
 use ratatui::prelude::*;
 use ratatui::backend::CrosstermBackend;
 
-use app::{App, AppMode, Focus};
+use app::{App, AppMode, Focus, SidebarItemKind};
 
 /// CmdRef - 交互式命令速查工具
 #[derive(Debug, Parser)]
@@ -40,6 +45,13 @@ struct Cli {
 enum Commands {
     /// 检查并更新到最新版本
     Update,
+    /// 显示当前数据目录路径
+    Path,
+    /// 云端同步（GitHub / WebDAV）
+    Sync {
+        #[command(subcommand)]
+        command: sync::SyncCommand,
+    },
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -50,9 +62,24 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     debug_log!("CmdRef starting, args: {:?}", cli);
 
     // 处理子命令
-    if let Some(Commands::Update) = cli.command {
-        update::run_update();
-        return Ok(());
+    if let Some(command) = cli.command {
+        match command {
+            Commands::Update => {
+                update::run_update();
+                return Ok(());
+            }
+            Commands::Path => {
+                println!("{}", crate::paths::data_dir().display());
+                return Ok(());
+            }
+            Commands::Sync { command } => {
+                if let Err(e) = sync::run(command) {
+                    eprintln!("✗ {}", e);
+                    std::process::exit(1);
+                }
+                return Ok(());
+            }
+        }
     }
 
     // 加载数据
@@ -103,24 +130,24 @@ fn run_app(
 
         // 事件处理
         if event::poll(Duration::from_millis(50))? {
-            match event::read()? {
-                Event::Key(key) => {
-                    // Ctrl+C 始终退出
-                    if key.modifiers.contains(KeyModifiers::CONTROL) && key.code == KeyCode::Char('c') {
-                        return Ok(());
-                    }
-
-                    match &app.mode {
-                        AppMode::Search => handle_search_input(app, key.code, key.modifiers),
-                        AppMode::AddCommand(_) => handle_editor_input(app, key.code, key.modifiers),
-                        AppMode::Normal => handle_normal_input(app, key.code, key.modifiers),
-                    }
-
-                    if app.should_quit {
-                        return Ok(());
-                    }
+            if let Event::Key(key) = event::read()? {
+                // Ctrl+C 始终退出
+                if key.modifiers.contains(KeyModifiers::CONTROL) && key.code == KeyCode::Char('c') {
+                    return Ok(());
                 }
-                _ => {}
+
+                match &app.mode {
+                    AppMode::Search => handle_search_input(app, key.code, key.modifiers),
+                    AppMode::AddCommand(_) => handle_editor_input(app, key.code, key.modifiers),
+                    AppMode::PromptEditor(_) => handle_prompt_editor_input(app, key.code, key.modifiers),
+                    AppMode::PasswordEditor(_) => handle_password_editor_input(app, key.code, key.modifiers),
+                    AppMode::MasterPassword(_) => handle_master_password_input(app, key.code, key.modifiers),
+                    AppMode::Normal => handle_normal_input(app, key.code, key.modifiers),
+                }
+
+                if app.should_quit {
+                    return Ok(());
+                }
             }
         }
 
@@ -138,10 +165,20 @@ fn handle_normal_input(app: &mut App, key: KeyCode, modifiers: KeyModifiers) {
                 KeyCode::Enter | KeyCode::Right => app.toggle_sidebar_item(),
                 KeyCode::Tab => app.switch_focus(),
                 KeyCode::Char('/') => app.enter_search_mode(),
-                KeyCode::Char('n') => app.open_add_command(),
+                KeyCode::Char('n') => {
+                    let kind = app.sidebar_items.get(app.sidebar_cursor)
+                        .map(|i| &i.kind);
+                    match kind {
+                        Some(SidebarItemKind::Prompts) => app.open_add_prompt(),
+                        Some(SidebarItemKind::Passwords) => app.open_add_password(),
+                        _ => app.open_add_command(),
+                    }
+                }
                 KeyCode::Char('q') => app.should_quit = true,
                 KeyCode::Char('B') => app.jump_to_bookmarks(),
                 KeyCode::Char('H') => app.jump_to_history(),
+                KeyCode::Char('P') => app.jump_to_prompts(),
+                KeyCode::Char('S') => app.jump_to_passwords(),
                 KeyCode::Char('1') => app.jump_to_platform(0),
                 KeyCode::Char('2') => app.jump_to_platform(1),
                 KeyCode::Char('3') => app.jump_to_platform(2),
@@ -160,23 +197,72 @@ fn handle_normal_input(app: &mut App, key: KeyCode, modifiers: KeyModifiers) {
                     _ => {}
                 }
             }
-            match key {
-                KeyCode::Char('j') | KeyCode::Down => app.move_content_down(),
-                KeyCode::Char('k') | KeyCode::Up => app.move_content_up(),
-                KeyCode::Left | KeyCode::Tab => app.switch_focus(),
-                KeyCode::Char('/') => app.enter_search_mode(),
-                KeyCode::Char('b') => app.toggle_bookmark(),
-                KeyCode::Char('n') => app.open_add_command(),
-                KeyCode::Char('d') => app.delete_custom_command(),
-                KeyCode::Char('B') => app.jump_to_bookmarks(),
-                KeyCode::Char('H') => app.jump_to_history(),
-                KeyCode::Char('q') => app.should_quit = true,
-                KeyCode::Esc => { app.focus = Focus::Sidebar; }
-                KeyCode::Char(c @ '1'..='9') => {
-                    let idx = (c as usize) - ('0' as usize);
-                    app.copy_example_by_index(idx);
+
+            let is_prompts = app.sidebar_items.get(app.sidebar_cursor)
+                .map(|i| i.kind == SidebarItemKind::Prompts)
+                .unwrap_or(false);
+            let is_passwords = app.sidebar_items.get(app.sidebar_cursor)
+                .map(|i| i.kind == SidebarItemKind::Passwords)
+                .unwrap_or(false);
+
+            if is_prompts {
+                match key {
+                    KeyCode::Char('j') | KeyCode::Down => app.move_content_down(),
+                    KeyCode::Char('k') | KeyCode::Up => app.move_content_up(),
+                    KeyCode::Left | KeyCode::Tab => app.switch_focus(),
+                    KeyCode::Char('/') => app.enter_search_mode(),
+                    KeyCode::Char('y') | KeyCode::Enter => app.copy_current_prompt(),
+                    KeyCode::Char('n') => app.open_add_prompt(),
+                    KeyCode::Char('e') => app.open_edit_prompt(),
+                    KeyCode::Char('d') => app.delete_current_prompt(),
+                    KeyCode::Char('B') => app.jump_to_bookmarks(),
+                    KeyCode::Char('H') => app.jump_to_history(),
+                    KeyCode::Char('P') => app.jump_to_prompts(),
+                    KeyCode::Char('S') => app.jump_to_passwords(),
+                    KeyCode::Char('q') => app.should_quit = true,
+                    KeyCode::Esc => { app.focus = Focus::Sidebar; }
+                    _ => {}
                 }
-                _ => {}
+            } else if is_passwords {
+                match key {
+                    KeyCode::Char('j') | KeyCode::Down => app.move_content_down(),
+                    KeyCode::Char('k') | KeyCode::Up => app.move_content_up(),
+                    KeyCode::Left | KeyCode::Tab => app.switch_focus(),
+                    KeyCode::Char('/') => app.enter_search_mode(),
+                    KeyCode::Char('y') | KeyCode::Enter => app.copy_current_password(),
+                    KeyCode::Char('n') => app.open_add_password(),
+                    KeyCode::Char('e') => app.open_edit_password(),
+                    KeyCode::Char('d') => app.delete_current_password(),
+                    KeyCode::Char('C') => app.change_master_password(),
+                    KeyCode::Char('B') => app.jump_to_bookmarks(),
+                    KeyCode::Char('H') => app.jump_to_history(),
+                    KeyCode::Char('P') => app.jump_to_prompts(),
+                    KeyCode::Char('S') => app.jump_to_passwords(),
+                    KeyCode::Char('q') => app.should_quit = true,
+                    KeyCode::Esc => { app.focus = Focus::Sidebar; }
+                    _ => {}
+                }
+            } else {
+                match key {
+                    KeyCode::Char('j') | KeyCode::Down => app.move_content_down(),
+                    KeyCode::Char('k') | KeyCode::Up => app.move_content_up(),
+                    KeyCode::Left | KeyCode::Tab => app.switch_focus(),
+                    KeyCode::Char('/') => app.enter_search_mode(),
+                    KeyCode::Char('b') => app.toggle_bookmark(),
+                    KeyCode::Char('n') => app.open_add_command(),
+                    KeyCode::Char('d') => app.delete_custom_command(),
+                    KeyCode::Char('B') => app.jump_to_bookmarks(),
+                    KeyCode::Char('H') => app.jump_to_history(),
+                    KeyCode::Char('P') => app.jump_to_prompts(),
+                    KeyCode::Char('S') => app.jump_to_passwords(),
+                    KeyCode::Char('q') => app.should_quit = true,
+                    KeyCode::Esc => { app.focus = Focus::Sidebar; }
+                    KeyCode::Char(c @ '1'..='9') => {
+                        let idx = (c as usize) - ('0' as usize);
+                        app.copy_example_by_index(idx);
+                    }
+                    _ => {}
+                }
             }
         }
         Focus::Search => {
@@ -204,7 +290,19 @@ fn handle_search_input(app: &mut App, key: KeyCode, _modifiers: KeyModifiers) {
 fn handle_editor_input(app: &mut App, key: KeyCode, modifiers: KeyModifiers) {
     match key {
         KeyCode::Esc => app.editor_cancel(),
-        KeyCode::Enter => app.editor_save(),
+        KeyCode::Enter => {
+            // Command 字段支持多行换行，其他字段触发保存
+            let is_command = if let AppMode::AddCommand(ref state) = app.mode {
+                state.active_field == app::EditorField::Command
+            } else {
+                false
+            };
+            if is_command {
+                app.editor_input('\n');
+            } else {
+                app.editor_save();
+            }
+        }
         KeyCode::Tab => {
             if modifiers.contains(KeyModifiers::SHIFT) {
                 app.editor_prev_field();
@@ -215,6 +313,90 @@ fn handle_editor_input(app: &mut App, key: KeyCode, modifiers: KeyModifiers) {
         KeyCode::BackTab => app.editor_prev_field(),
         KeyCode::Backspace => app.editor_backspace(),
         KeyCode::Char(c) => app.editor_input(c),
+        _ => {}
+    }
+}
+
+fn handle_prompt_editor_input(app: &mut App, key: KeyCode, modifiers: KeyModifiers) {
+    match key {
+        KeyCode::Esc => app.prompt_editor_cancel(),
+        KeyCode::Enter => {
+            // Content 字段支持多行换行，其他字段跳到下一项
+            let is_content = if let AppMode::PromptEditor(ref state) = app.mode {
+                state.active_field == app::PromptField::Content
+            } else {
+                false
+            };
+            if is_content {
+                app.prompt_editor_input('\n');
+            } else {
+                app.prompt_editor_next_field();
+            }
+        }
+        KeyCode::Char('s') => {
+            if modifiers.contains(KeyModifiers::CONTROL) {
+                app.prompt_editor_save();
+            } else {
+                app.prompt_editor_input('s');
+            }
+        }
+        KeyCode::Tab => {
+            if modifiers.contains(KeyModifiers::SHIFT) {
+                app.prompt_editor_prev_field();
+            } else {
+                app.prompt_editor_next_field();
+            }
+        }
+        KeyCode::BackTab => app.prompt_editor_prev_field(),
+        KeyCode::Backspace => app.prompt_editor_backspace(),
+        KeyCode::Char(c) => app.prompt_editor_input(c),
+        _ => {}
+    }
+}
+
+fn handle_password_editor_input(app: &mut App, key: KeyCode, modifiers: KeyModifiers) {
+    match key {
+        KeyCode::Esc => app.password_editor_cancel(),
+        KeyCode::Enter => {
+            let is_last = if let AppMode::PasswordEditor(ref state) = app.mode {
+                state.active_field == app::PasswordField::Description
+            } else {
+                false
+            };
+            if is_last {
+                app.password_editor_save();
+            } else {
+                app.password_editor_next_field();
+            }
+        }
+        KeyCode::Char('s') => {
+            if modifiers.contains(KeyModifiers::CONTROL) {
+                app.password_editor_save();
+            } else {
+                app.password_editor_input('s');
+            }
+        }
+        KeyCode::Tab => {
+            if modifiers.contains(KeyModifiers::SHIFT) {
+                app.password_editor_prev_field();
+            } else {
+                app.password_editor_next_field();
+            }
+        }
+        KeyCode::BackTab => app.password_editor_prev_field(),
+        KeyCode::Backspace => app.password_editor_backspace(),
+        KeyCode::Char(c) => app.password_editor_input(c),
+        _ => {}
+    }
+}
+
+fn handle_master_password_input(app: &mut App, key: KeyCode, _modifiers: KeyModifiers) {
+    match key {
+        KeyCode::Esc => app.master_password_cancel(),
+        KeyCode::Enter => app.master_password_submit(),
+        KeyCode::Tab | KeyCode::BackTab => app.master_password_next_field(),
+        KeyCode::Backspace => app.master_password_backspace(),
+        KeyCode::Char(c) => app.master_password_input(c),
         _ => {}
     }
 }

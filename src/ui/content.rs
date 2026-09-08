@@ -8,14 +8,14 @@ pub fn draw(frame: &mut Frame, app: &App, area: Rect) {
 
     // 获取当前分类信息
     let title = if let Some(item) = app.sidebar_items.get(app.sidebar_cursor) {
-        if item.kind == SidebarItemKind::Bookmarks {
-            " ★ Bookmarks ".to_string()
-        } else if item.kind == SidebarItemKind::History {
-            " 🕑 History ".to_string()
-        } else {
-            app.current_category()
+        match item.kind {
+            SidebarItemKind::Bookmarks => " ★ Bookmarks ".to_string(),
+            SidebarItemKind::History => " 🕑 History ".to_string(),
+            SidebarItemKind::Prompts => " 🤖 Prompts ".to_string(),
+            SidebarItemKind::Passwords => " 🔑 Passwords ".to_string(),
+            _ => app.current_category()
                 .map(|c| format!(" {} ", c.name))
-                .unwrap_or_else(|| " Command Details ".to_string())
+                .unwrap_or_else(|| " Command Details ".to_string()),
         }
     } else {
         " Command Details ".to_string()
@@ -121,6 +121,70 @@ fn draw_command_list(frame: &mut Frame, app: &App, area: Rect) {
             frame.render_widget(list, area);
             return;
         }
+
+        // Prompts 模式：显示 Prompt 列表
+        if item.kind == SidebarItemKind::Prompts {
+            let prompts: Vec<&crate::prompts::Prompt> = app.prompts.all().iter().collect();
+
+            if prompts.is_empty() {
+                let empty = Paragraph::new("  (no prompts yet)\n\n  Press 'n' to add\n  your first prompt")
+                    .style(Style::default().fg(Color::DarkGray));
+                frame.render_widget(empty, area);
+                return;
+            }
+
+            let items: Vec<ListItem> = prompts
+                .iter()
+                .enumerate()
+                .map(|(i, prompt)| {
+                    let is_selected = i == selected;
+                    let style = if is_selected {
+                        Style::default().fg(Color::Black).bg(Color::Magenta).add_modifier(Modifier::BOLD)
+                    } else {
+                        Style::default().fg(Color::White)
+                    };
+                    ListItem::new(Line::from(vec![
+                        Span::styled(format!("  {}", prompt.name), style),
+                    ]))
+                })
+                .collect();
+
+            let list = List::new(items);
+            frame.render_widget(list, area);
+            return;
+        }
+
+        // Passwords 模式：显示密码列表
+        if item.kind == SidebarItemKind::Passwords {
+            let passwords: Vec<&crate::passwords::Password> = app.passwords.all().iter().collect();
+
+            if passwords.is_empty() {
+                let empty = Paragraph::new("  (no passwords yet)\n\n  Press 'n' to add\n  your first password")
+                    .style(Style::default().fg(Color::DarkGray));
+                frame.render_widget(empty, area);
+                return;
+            }
+
+            let items: Vec<ListItem> = passwords
+                .iter()
+                .enumerate()
+                .map(|(i, password)| {
+                    let is_selected = i == selected;
+                    let style = if is_selected {
+                        Style::default().fg(Color::Black).bg(Color::Cyan).add_modifier(Modifier::BOLD)
+                    } else {
+                        Style::default().fg(Color::White)
+                    };
+                    ListItem::new(Line::from(vec![
+                        Span::styled(format!("  {}", password.name), style),
+                    ]))
+                })
+                .collect();
+
+            let list = List::new(items);
+            frame.render_widget(list, area);
+            return;
+        }
     }
 
     // 普通模式
@@ -170,6 +234,18 @@ fn draw_command_list(frame: &mut Frame, app: &App, area: Rect) {
 
 /// 渲染命令详情
 fn draw_command_detail(frame: &mut Frame, app: &App, area: Rect) {
+    // Prompts / Passwords 详情单独渲染
+    if let Some(item) = app.sidebar_items.get(app.sidebar_cursor) {
+        if item.kind == SidebarItemKind::Prompts {
+            draw_prompt_detail(frame, app, area);
+            return;
+        }
+        if item.kind == SidebarItemKind::Passwords {
+            draw_password_detail(frame, app, area);
+            return;
+        }
+    }
+
     let cmd = match app.current_command() {
         Some(cmd) => cmd.clone(),
         None => {
@@ -356,6 +432,166 @@ fn draw_command_detail(frame: &mut Frame, app: &App, area: Rect) {
             ),
         ]));
     }
+
+    let paragraph = Paragraph::new(lines)
+        .wrap(Wrap { trim: false })
+        .scroll((app.detail_scroll as u16, 0));
+    frame.render_widget(paragraph, area);
+}
+
+/// 渲染 Prompt 详情
+fn draw_prompt_detail(frame: &mut Frame, app: &App, area: Rect) {
+    let prompt = match app.current_prompt() {
+        Some(p) => p.clone(),
+        None => {
+            let msg = Paragraph::new("  Select a prompt to view details")
+                .style(Style::default().fg(Color::DarkGray));
+            frame.render_widget(msg, area);
+            return;
+        }
+    };
+
+    let mut lines: Vec<Line> = Vec::new();
+
+    // 状态消息（如果有）
+    if !app.status_message.is_empty() {
+        lines.push(Line::from(vec![
+            Span::styled(
+                format!("  {}", app.status_message),
+                Style::default().fg(Color::Green).add_modifier(Modifier::BOLD),
+            ),
+        ]));
+        lines.push(Line::from(""));
+    }
+
+    // 名称
+    lines.push(Line::from(vec![
+        Span::styled(
+            format!("  {}", prompt.name),
+            Style::default().fg(Color::Yellow).add_modifier(Modifier::BOLD),
+        ),
+    ]));
+
+    // 描述
+    if !prompt.description.is_empty() {
+        lines.push(Line::from(vec![
+            Span::styled(
+                format!("  {}", prompt.description),
+                Style::default().fg(Color::Gray),
+            ),
+        ]));
+    }
+
+    // 标签
+    if !prompt.tags.is_empty() {
+        lines.push(Line::from(vec![
+            Span::styled(
+                format!("  {} ", prompt.tags.iter().map(|t| format!("#{} ", t)).collect::<String>()),
+                Style::default().fg(Color::DarkGray),
+            ),
+        ]));
+    }
+    lines.push(Line::from(""));
+
+    // CONTENT 标题
+    lines.push(Line::from(vec![
+        Span::styled(
+            "  CONTENT",
+            Style::default().fg(Color::Magenta).add_modifier(Modifier::BOLD),
+        ),
+    ]));
+    lines.push(Line::from(vec![
+        Span::styled(
+            "  ────────────────────────────────",
+            Style::default().fg(Color::DarkGray),
+        ),
+    ]));
+
+    // 多行正文
+    for line in prompt.content.lines() {
+        lines.push(Line::from(vec![
+            Span::styled(
+                format!("  {}", line),
+                Style::default().fg(Color::White),
+            ),
+        ]));
+    }
+
+    // 操作提示
+    lines.push(Line::from(""));
+    lines.push(Line::from(vec![
+        Span::styled(
+            "  y: 复制全文",
+            Style::default().fg(Color::DarkGray),
+        ),
+    ]));
+
+    let paragraph = Paragraph::new(lines)
+        .wrap(Wrap { trim: false })
+        .scroll((app.detail_scroll as u16, 0));
+    frame.render_widget(paragraph, area);
+}
+
+/// 渲染 Password 详情
+fn draw_password_detail(frame: &mut Frame, app: &App, area: Rect) {
+    let password = match app.current_password() {
+        Some(p) => p.clone(),
+        None => {
+            let msg = Paragraph::new("  Select a password to view details")
+                .style(Style::default().fg(Color::DarkGray));
+            frame.render_widget(msg, area);
+            return;
+        }
+    };
+
+    let mut lines: Vec<Line> = Vec::new();
+
+    // 状态消息（如果有）
+    if !app.status_message.is_empty() {
+        lines.push(Line::from(vec![
+            Span::styled(
+                format!("  {}", app.status_message),
+                Style::default().fg(Color::Green).add_modifier(Modifier::BOLD),
+            ),
+        ]));
+        lines.push(Line::from(""));
+    }
+
+    // 名称
+    lines.push(Line::from(vec![
+        Span::styled(
+            format!("  {}", password.name),
+            Style::default().fg(Color::Yellow).add_modifier(Modifier::BOLD),
+        ),
+    ]));
+
+    // 描述
+    if !password.description.is_empty() {
+        lines.push(Line::from(vec![
+            Span::styled(
+                format!("  {}", password.description),
+                Style::default().fg(Color::Gray),
+            ),
+        ]));
+    }
+    lines.push(Line::from(""));
+
+    // VALUE — 始终显示掩码
+    lines.push(Line::from(vec![
+        Span::styled(
+            "  ••••••••",
+            Style::default().fg(Color::Cyan),
+        ),
+    ]));
+
+    // 操作提示
+    lines.push(Line::from(""));
+    lines.push(Line::from(vec![
+        Span::styled(
+            "  y: 复制密码  e: 编辑  d: 删除",
+            Style::default().fg(Color::DarkGray),
+        ),
+    ]));
 
     let paragraph = Paragraph::new(lines)
         .wrap(Wrap { trim: false })

@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 
 /// 单条命令示例
-#[derive(Debug, Clone, Deserialize, Serialize)]
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
 pub struct Example {
     pub description: String,
     pub code: String,
@@ -15,7 +15,7 @@ pub struct Example {
 }
 
 /// 命令定义
-#[derive(Debug, Clone, Deserialize, Serialize)]
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
 pub struct Command {
     pub name: String,
     pub summary: String,
@@ -152,10 +152,7 @@ pub fn load_all_data() -> Vec<Platform> {
 
 /// 从 ~/.config/cmdref/custom/ 加载用户自定义命令并合并到平台数据
 fn merge_custom_commands(platforms: &mut Vec<Platform>) {
-    let custom_dir = dirs::config_dir()
-        .unwrap_or_else(|| std::path::PathBuf::from("."))
-        .join("cmdref")
-        .join("custom");
+    let custom_dir = crate::paths::custom_dir();
 
     if !custom_dir.is_dir() {
         return;

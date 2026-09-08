@@ -23,11 +23,7 @@ impl BookmarkManager {
     }
 
     fn config_path() -> PathBuf {
-        let mut path = dirs::config_dir().unwrap_or_else(|| PathBuf::from("."));
-        path.push("cmdref");
-        std::fs::create_dir_all(&path).ok();
-        path.push("bookmarks.json");
-        path
+        crate::paths::bookmarks_file()
     }
 
     fn load_from_file(path: &PathBuf) -> Vec<BookmarkEntry> {

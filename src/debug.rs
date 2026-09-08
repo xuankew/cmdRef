@@ -14,11 +14,7 @@ macro_rules! debug_log {
 }
 
 fn log_path() -> PathBuf {
-    let mut path = dirs::config_dir().unwrap_or_else(|| PathBuf::from("."));
-    path.push("cmdref");
-    std::fs::create_dir_all(&path).ok();
-    path.push("debug.log");
-    path
+    crate::paths::log_path()
 }
 
 pub fn write_log(msg: &str) {

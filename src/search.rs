@@ -1,18 +1,54 @@
-use crate::data::{Command, Category, Platform};
+use crate::data::{Category, Command, Platform};
+use crate::prompts::PromptStore;
 use fuzzy_matcher::skim::SkimMatcherV2;
 use fuzzy_matcher::FuzzyMatcher;
 
-/// 搜索结果
-pub struct SearchResult<'a> {
+/// 命令搜索结果
+pub struct CommandSearchResult<'a> {
     pub platform: &'a Platform,
     pub category: &'a Category,
     pub command: &'a Command,
     pub score: i64,
 }
 
+/// Prompt 搜索结果
+pub struct PromptSearchResult<'a> {
+    pub prompt: &'a crate::prompts::Prompt,
+    pub score: i64,
+}
+
+/// Password 搜索结果
+pub struct PasswordSearchResult<'a> {
+    pub password: &'a crate::passwords::Password,
+    pub score: i64,
+}
+
 /// 搜索引擎
 pub struct SearchEngine {
     matcher: SkimMatcherV2,
+}
+
+/// 对长文本做可搜索截断，避免超长 Prompt 内容拖慢模糊匹配。
+fn searchable_text(text: &str, max_chars: usize, max_lines: usize) -> String {
+    let mut lines = text.lines();
+    let mut result = String::new();
+    let mut line_count = 0;
+    while line_count < max_lines {
+        if let Some(line) = lines.next() {
+            if !result.is_empty() {
+                result.push('\n');
+            }
+            result.push_str(line);
+            line_count += 1;
+        } else {
+            break;
+        }
+    }
+    if result.chars().count() > max_chars {
+        result.chars().take(max_chars).collect()
+    } else {
+        result
+    }
 }
 
 impl SearchEngine {
@@ -23,11 +59,11 @@ impl SearchEngine {
     }
 
     /// 搜索命令，返回匹配结果（按分数排序）
-    pub fn search<'a>(
+    pub fn search_commands<'a>(
         &self,
         query: &str,
         platforms: &'a [Platform],
-    ) -> Vec<SearchResult<'a>> {
+    ) -> Vec<CommandSearchResult<'a>> {
         if query.is_empty() {
             return Vec::new();
         }
@@ -91,7 +127,7 @@ impl SearchEngine {
                         continue;
                     }
 
-                    results.push(SearchResult {
+                    results.push(CommandSearchResult {
                         platform,
                         category,
                         command,
@@ -101,7 +137,107 @@ impl SearchEngine {
             }
         }
 
-        results.sort_by(|a, b| b.score.cmp(&a.score));
+        results.sort_by_key(|a| std::cmp::Reverse(a.score));
+        results
+    }
+
+    /// 搜索 Prompts，返回匹配结果（按分数排序）。
+    /// 为避免超长内容拖慢每次按键，content 只取前 500 字符 / 前 20 行参与匹配。
+    pub fn search_prompts<'a>(
+        &self,
+        query: &str,
+        prompts: &'a PromptStore,
+    ) -> Vec<PromptSearchResult<'a>> {
+        if query.is_empty() {
+            return Vec::new();
+        }
+
+        let mut results = Vec::new();
+        const CONTENT_MAX_CHARS: usize = 500;
+        const CONTENT_MAX_LINES: usize = 20;
+
+        for prompt in prompts.all() {
+            let name_score = self.matcher.fuzzy_match(&prompt.name, query);
+            let description_score = self.matcher.fuzzy_match(&prompt.description, query);
+            let tags_score = prompt
+                .tags
+                .iter()
+                .filter_map(|t| self.matcher.fuzzy_match(t, query))
+                .max();
+
+            let content_preview = searchable_text(&prompt.content, CONTENT_MAX_CHARS, CONTENT_MAX_LINES);
+            let content_score = self.matcher.fuzzy_match(&content_preview, query);
+
+            // 名称 x3, 描述 x1, tags x2, content x0.5
+            let mut score: i64 = 0;
+            let mut matched = false;
+
+            if let Some(n) = name_score {
+                score += n * 3;
+                matched = true;
+            }
+            if let Some(d) = description_score {
+                score += d;
+                matched = true;
+            }
+            if let Some(tg) = tags_score {
+                score += tg * 2;
+                matched = true;
+            }
+            if let Some(c) = content_score {
+                score += c / 2;
+                matched = true;
+            }
+
+            if !matched {
+                continue;
+            }
+
+            results.push(PromptSearchResult { prompt, score });
+        }
+
+        results.sort_by_key(|a| std::cmp::Reverse(a.score));
+        results
+    }
+
+    /// 搜索 Passwords，返回匹配结果（按分数排序）。
+    /// 仅搜索 name 和 description，不搜索加密的 value 字段。
+    pub fn search_passwords<'a>(
+        &self,
+        query: &str,
+        passwords: &'a crate::passwords::PasswordStore,
+    ) -> Vec<PasswordSearchResult<'a>> {
+        if query.is_empty() {
+            return Vec::new();
+        }
+
+        let mut results = Vec::new();
+
+        for password in passwords.all() {
+            let name_score = self.matcher.fuzzy_match(&password.name, query);
+            let description_score = self.matcher.fuzzy_match(&password.description, query);
+
+            // 名称 x3, 描述 x1
+            let mut score: i64 = 0;
+            let mut matched = false;
+
+            if let Some(n) = name_score {
+                score += n * 3;
+                matched = true;
+            }
+            if let Some(d) = description_score {
+                score += d;
+                matched = true;
+            }
+
+            if !matched {
+                continue;
+            }
+
+            results.push(PasswordSearchResult { password, score });
+        }
+
+        results.sort_by_key(|a| std::cmp::Reverse(a.score));
         results
     }
 }

@@ -1,6 +1,6 @@
 use ratatui::prelude::*;
 use ratatui::widgets::*;
-use crate::app::App;
+use crate::app::{App, SearchResultIndex};
 
 /// 渲染搜索输入框
 pub fn draw_input(frame: &mut Frame, app: &App, area: Rect) {
@@ -24,7 +24,7 @@ pub fn draw_input(frame: &mut Frame, app: &App, area: Rect) {
     frame.render_widget(input, area);
 }
 
-/// 渲染搜索结果
+/// 渲染搜索结果（命令 + Prompts 混合）
 pub fn draw_results(frame: &mut Frame, app: &App, area: Rect) {
     let block = Block::default()
         .title(format!(" 搜索结果 ({}) ", app.search_results.len()))
@@ -58,14 +58,44 @@ pub fn draw_results(frame: &mut Frame, app: &App, area: Rect) {
                 Style::default()
             };
 
-            let platform = &app.platforms[result.platform_index];
-            let category = &platform.categories[result.category_index];
-            let command = &category.commands[result.command_index];
-
-            let breadcrumb = format!(
-                "  {} > {} > {}",
-                platform.display_name, category.name, command.name
-            );
+            let (breadcrumb, summary) = match result {
+                SearchResultIndex::Command {
+                    platform_index,
+                    category_index,
+                    command_index,
+                    ..
+                } => {
+                    let platform = &app.platforms[*platform_index];
+                    let category = &platform.categories[*category_index];
+                    let command = &category.commands[*command_index];
+                    (
+                        format!("  {} > {} > {}", platform.display_name, category.name, command.name),
+                        command.summary.clone(),
+                    )
+                }
+                SearchResultIndex::Prompt { prompt_index, .. } => {
+                    let prompt = app.prompts.get(*prompt_index).unwrap();
+                    (
+                        format!("  🤖 Prompts > {}", prompt.name),
+                        if prompt.description.is_empty() {
+                            prompt.content.lines().next().unwrap_or("").to_string()
+                        } else {
+                            prompt.description.clone()
+                        },
+                    )
+                }
+                SearchResultIndex::Password { password_index, .. } => {
+                    let password = app.passwords.get(*password_index).unwrap();
+                    (
+                        format!("  🔑 Passwords > {}", password.name),
+                        if password.description.is_empty() {
+                            "(已加密)".to_string()
+                        } else {
+                            password.description.clone()
+                        },
+                    )
+                }
+            };
 
             let spans = vec![
                 Span::styled(breadcrumb, style),
@@ -75,14 +105,14 @@ pub fn draw_results(frame: &mut Frame, app: &App, area: Rect) {
             let summary_line = if is_selected {
                 Line::from(vec![
                     Span::styled(
-                        format!("    {}", command.summary),
+                        format!("    {}", summary),
                         Style::default().fg(Color::Black).bg(Color::Cyan),
                     ),
                 ])
             } else {
                 Line::from(vec![
                     Span::styled(
-                        format!("    {}", command.summary),
+                        format!("    {}", summary),
                         Style::default().fg(Color::DarkGray),
                     ),
                 ])

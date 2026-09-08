@@ -12,6 +12,18 @@ pub fn draw(frame: &mut Frame, app: &App) {
             draw_main_layout(frame, app);
             editor::draw(frame, app);
         }
+        AppMode::PromptEditor(_) => {
+            draw_main_layout(frame, app);
+            editor::draw_prompt(frame, app);
+        }
+        AppMode::PasswordEditor(_) => {
+            draw_main_layout(frame, app);
+            editor::draw_password(frame, app);
+        }
+        AppMode::MasterPassword(_) => {
+            draw_main_layout(frame, app);
+            editor::draw_master_password(frame, app);
+        }
         AppMode::Normal => draw_main_layout(frame, app),
     }
 }

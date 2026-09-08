@@ -2,6 +2,37 @@
 
 All notable changes to CmdRef are documented in this file.
 
+## [0.6.0] - 2026-09-08
+
+### New Features
+
+- **Prompts manager** — record AI prompts with name, description, and multi-line content (`P` to jump, `n` to create, `e` to edit, `d` to delete, `y` to copy)
+- **WebDAV cloud sync** — `cmdref sync login/push/pull/status/logout` keeps bookmarks, custom commands, and prompts in sync across devices (works with 坚果云, Nextcloud, and any standard WebDAV server)
+- **GitHub cloud sync** — `cmdref sync login --backend github --token <PAT> --repo <owner/repo>` syncs data to a user-created private GitHub repository via Contents API; supports fine-grained PAT scoped to a single repo
+- **3-way merge on pull** — non-conflicting changes from multiple devices are combined automatically; conflicts default to the cloud version (`--prefer-local` to keep local), with pre-sync backups (last 10 kept)
+- **Cross-device data folder** — set `CMDREF_DATA_DIR` to a cloud-synced folder so bookmarks, custom commands, and prompts follow you across devices
+- **`cmdref path`** — print the resolved data directory
+
+### UI Improvements
+
+- Sidebar now shows `🤖 Prompts` alongside Bookmarks and History
+- Content area supports prompt-specific rendering with scrollable detail view
+- New prompt editor with multi-line content input and `Ctrl+S` save
+- Help bar updated with Prompts shortcuts and `P` navigation
+
+### Data Structure
+
+- Added `src/prompts.rs` with dedicated `Prompt` / `PromptFile` / `PromptStore` models
+- Added `src/paths.rs` for centralized path resolution (`data_dir`, `prompts_dir`, `custom_dir`, `bookmarks_file`, `history_file`, `log_path`)
+- Added `src/sync/` module (`config.rs`, `dav.rs`, `github.rs`, `snapshot.rs`, `merge.rs`) — WebDAV and GitHub via curl shell-out, credentials passed securely, zero HTTP library dependencies
+- Added WebDAV integration tests (`tests/webdav_server.py` + `tests/sync_dav.rs`, auto-skip without python3)
+- Custom commands and prompts share the configurable `CMDREF_DATA_DIR`; history and debug logs remain local
+
+### Bug Fixes
+
+- Fixed subtract-with-overflow panic in prompt editor cursor positioning on small terminals
+- Fixed CJK input byte-slice panic in editor rendering
+
 ## [0.3.0] - 2026-08-26
 
 ### New Content — Dev Tools Platform (63 commands)
