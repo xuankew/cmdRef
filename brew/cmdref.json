@@ -1,12 +1,12 @@
 {
-    "version": "0.5.0",
+    "version": "0.6.0",
     "description": "Interactive command reference tool \u2014 189 commands across 5 platforms",
     "homepage": "https://github.com/xuankew/cmdRef",
     "license": "MIT",
     "architecture": {
         "64bit": {
-            "url": "https://github.com/xuankew/cmdRef/releases/download/v0.5.0/cmdref.exe",
-            "hash": "26a08ff1d3b34fbe919bcdc2c3ef620021d927f90aca41268e9e422435c2decc"
+            "url": "https://github.com/xuankew/cmdRef/releases/download/v0.6.0/cmdref.exe",
+            "hash": "22db1adf9113cf02c448aff62fb9a1b10384bd39002b47234563634fcadbd47e"
         }
     },
     "bin": "cmdref.exe",
